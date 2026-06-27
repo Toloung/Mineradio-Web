@@ -1,7 +1,8 @@
 {
-  "envId": "{{envId}}",
+  "envId": "mineradio-d1gvaxxlx35c1a48a",
+  "version": "2.0",
   "framework": {
-    "name": "mineradio-mobile",
+    "name": "mineradio",
     "plugins": {
       "container": {
         "use": "@cloudbase/framework-plugin-container",
@@ -9,10 +10,7 @@
           "serviceName": "mineradio",
           "servicePath": "/",
           "containerPort": 3000,
-          "dockerfile": "Dockerfile",
-          "envVariables": {
-            "PORT": "3000"
-          }
+          "dockerfile": "Dockerfile"
         }
       }
     }
