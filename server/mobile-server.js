@@ -13,7 +13,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const STATIC_DIR = process.env.STATIC_DIR || path.join(__dirname, '..', 'www');
 const COOKIE_FILE = process.env.COOKIE_FILE || path.join(__dirname, '.cookie');
@@ -184,7 +184,7 @@ const server = http.createServer(async (req, res) => {
       }
       // Use captcha_sent to send SMS verification code
       const sent = await NeteaseAPI.captcha_sent({
-        cellphone: phone,
+        phone: phone,
         ctcode: countrycode || '86',
         timestamp: Date.now(),
       });
@@ -243,10 +243,13 @@ const server = http.createServer(async (req, res) => {
 
     const proxy = http.request(options, (proxyRes) => {
       // Add CORS headers to proxied responses
-      const headers = {
-        ...proxyRes.headers,
-        'Access-Control-Allow-Origin': '*',
-      };
+      // The upstream server already sets this header.  Header names are
+      // case-insensitive on the wire, but object keys are not: adding the
+      // title-cased form beside the upstream lower-case key emits two CORS
+      // headers, which Android WebView correctly rejects.
+      const headers = { ...proxyRes.headers };
+      delete headers['access-control-allow-origin'];
+      headers['Access-Control-Allow-Origin'] = '*';
       res.writeHead(proxyRes.statusCode, headers);
       proxyRes.pipe(res);
     });

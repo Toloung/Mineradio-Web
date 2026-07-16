@@ -1670,11 +1670,22 @@ async function handleDiscoverHome() {
   const info = await getLoginInfo();
   const loggedIn = !!(info && info.loggedIn);
   if (!loggedIn) {
+    let playlists = [];
+    try {
+      const publicResult = await personalized({ limit: 8, timestamp: Date.now() });
+      const body = publicResult && publicResult.body || {};
+      playlists = (body.result || body.data || [])
+        .map(pl => mapDiscoverPlaylist(pl, '公共推荐'))
+        .filter(pl => pl.id && pl.name)
+        .slice(0, 8);
+    } catch (err) {
+      console.warn('[DiscoverHome] public recommendations unavailable:', err.message || err);
+    }
     return {
       loggedIn: false,
       user: null,
       dailySongs: [],
-      playlists: [],
+      playlists,
       podcasts: [],
       mode: 'starter',
       updatedAt: Date.now(),
@@ -2649,6 +2660,24 @@ async function handleQQSearch(keywords, limit) {
   });
 }
 
+async function probeQQAudioUrl(audioUrl) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6500);
+  try {
+    const response = await fetch(audioUrl, {
+      headers: audioProxyHeadersFor(audioUrl, 'bytes=0-1'),
+      signal: controller.signal,
+      redirect: 'follow',
+    });
+    if (response.body && response.body.cancel) response.body.cancel().catch(() => {});
+    return response.status === 200 || response.status === 206;
+  } catch (e) {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function handleQQSongUrl(mid, mediaMid, qualityPreference) {
   const songmid = String(mid || '').trim();
   if (!songmid) return { provider: 'qq', url: '', error: 'MISSING_MID', message: 'Missing QQ song mid' };
@@ -2691,11 +2720,39 @@ async function handleQQSongUrl(mid, mediaMid, qualityPreference) {
   const info = infos.find(item => item && item.purl) || infos[0];
   const purl = info && info.purl;
   if (purl) {
-    const sip = (data.sip && data.sip[0]) || 'https://ws.stream.qqmusic.qq.com/';
+    // QQ may return a vkey for a high-quality file which its CDN then rejects
+    // with 404.  Probe one byte server-side and pick the first usable quality,
+    // rather than making the Android player fail before it can retry.
+    const sipList = (data && Array.isArray(data.sip) && data.sip.length ? data.sip : ['https://ws.stream.qqmusic.qq.com/'])
+      .filter(Boolean);
+    const candidates = infos.filter(item => item && item.purl);
+    for (const candidate of candidates) {
+      for (const sip of sipList) {
+        const audioUrl = /^https?:\/\//i.test(candidate.purl)
+          ? candidate.purl
+          : String(sip).replace(/\/?$/, '/') + String(candidate.purl).replace(/^\//, '');
+        if (!await probeQQAudioUrl(audioUrl)) continue;
+        const fileMeta = fileCandidates.find(item => item.filename === candidate.filename) || {};
+        return {
+          provider: 'qq',
+          url: audioUrl,
+          trial: false,
+          playable: true,
+          level: fileMeta.level || candidate.filename || '',
+          quality: fileMeta.label || candidate.filename || '',
+          filename: candidate.filename || '',
+          requestedQuality,
+        };
+      }
+    }
+
+    // Preserve the API response if every short probe failed.  This avoids
+    // turning a transient CDN timeout into a false "unplayable" result.
+    const sip = sipList[0] || 'https://ws.stream.qqmusic.qq.com/';
     const fileMeta = fileCandidates.find(item => item.filename === info.filename) || {};
     return {
       provider: 'qq',
-      url: sip + purl,
+      url: /^https?:\/\//i.test(purl) ? purl : String(sip).replace(/\/?$/, '/') + String(purl).replace(/^\//, ''),
       trial: false,
       playable: true,
       level: fileMeta.level || info.filename || '',

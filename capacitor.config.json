@@ -3,7 +3,7 @@
   "appName": "Mineradio",
   "webDir": "www",
   "server": {
-    "androidScheme": "https",
+    "androidScheme": "http",
     "iosScheme": "https",
     "allowNavigation": [
       "music.163.com",

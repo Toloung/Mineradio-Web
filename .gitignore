@@ -1,5 +1,7 @@
 node_modules/
 dist/
+www/
+backups/
 .cookie
 .qq-cookie
 *.log

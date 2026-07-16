@@ -4,18 +4,19 @@
   "description": "Mineradio 移动版 — 沉浸式音乐播放器",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node -e \"var f=require('fs'),p=require('path');['vendor','assets'].forEach(function(d){var s=p.join('public',d),t=p.join('www',d);if(f.existsSync(s)){f.mkdirSync(t,{recursive:true});f.readdirSync(s).forEach(function(x){f.copyFileSync(p.join(s,x),p.join(t,x))})}})\"",
-    "sync": "npx cap sync",
+    "build": "vite build && node -e \"var f=require('fs'),p=require('path');['vendor','assets'].forEach(function(d){var s=p.join('public',d),t=p.join('www',d);if(f.existsSync(s)){f.mkdirSync(t,{recursive:true});f.readdirSync(s).forEach(function(x){f.copyFileSync(p.join(s,x),p.join(t,x))})}});['home-player.css','ui-system.css','home-player.js'].forEach(function(x){var s=p.join('public',x),t=p.join('www',x);if(f.existsSync(s))f.copyFileSync(s,t)})\"",
+    "sync": "npx cap sync && npm run android:java17",
+    "android:java17": "node scripts/patch-android-java17.mjs",
     "open:android": "npx cap open android",
     "open:ios": "npx cap open ios",
-    "build:android": "vite build && npx cap sync android",
+    "build:android": "vite build && npx cap sync android && npm run android:java17",
     "build:ios": "vite build && npx cap sync ios"
   },
   "dependencies": {
-    "@capacitor/android": "^7.3.0",
-    "@capacitor/cli": "^7.3.0",
-    "@capacitor/core": "^7.3.0",
-    "@capacitor/ios": "^7.3.0",
+    "@capacitor/android": "7.3.0",
+    "@capacitor/cli": "7.3.0",
+    "@capacitor/core": "7.3.0",
+    "@capacitor/ios": "7.3.0",
     "crypto-js": "^4.2.0",
     "mpg123-decoder": "^1.0.3",
     "NeteaseCloudMusicApi": "^4.32.0"
