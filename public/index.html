@@ -3297,6 +3297,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
       <div id="quality-control" class="quality-control">
         <button id="quality-btn" class="ctrl-btn quality-pill" onclick="toggleQualityPanel(event)" title="音质"><span id="quality-btn-label">臻音</span></button>
         <div class="quality-popover" onclick="event.stopPropagation()">
+          <button class="quality-option" data-quality="auto" onclick="setPlaybackQuality('auto')"><span>自动</span><small>网络卡顿时自动降档</small></button>
           <button class="quality-option svip-only" data-quality="jymaster" data-svip="1" onclick="setPlaybackQuality('jymaster')"><span>超清母带</span><small>SVIP / 最高规格</small></button>
           <button class="quality-option" data-quality="hires" onclick="setPlaybackQuality('hires')"><span>高清臻音</span><small>默认 / 细节优先</small></button>
           <button class="quality-option" data-quality="lossless" onclick="setPlaybackQuality('lossless')"><span>无损 SQ</span><small>FLAC 优先</small></button>
@@ -4152,6 +4153,7 @@ var CUSTOM_LYRIC_PREF_STORE_KEY = 'mineradio-custom-lyric-prefs-v1';
 var LYRIC_LAYOUT_STORE_KEY = 'mineradio-lyric-layout-v1';
 var VISUAL_PRESET_SCHEMA = 'skull-preset-v2';
 var PLAYBACK_QUALITY_STORE_KEY = 'mineradio-playback-quality-v1';
+var PLAYBACK_QUALITY_MODE_STORE_KEY = 'mineradio-playback-quality-mode-v2';
 var UPLOAD_TIP_STORE_KEY = 'mineradio-upload-tip-seen';
 var DIY_MODE_STORE_KEY = 'mineradio-diy-player-mode-v1';
 var PLAYLIST_PANEL_PIN_STORE_KEY = 'mineradio-playlist-panel-pinned-v1';
@@ -4182,6 +4184,8 @@ var customLyricPrefs = readCustomLyricPrefs();
 var localBeatMapCache = readLocalBeatMapCache();
 var localBeatMapPrefs = readLocalBeatPrefs();
 var playbackQuality = readPlaybackQualityPreference();
+var playbackAutoQuality = 'exhigh';
+var adaptivePlaybackState = { token:0, stallTimer:null, stallEvents:[], switching:false, exhausted:false };
 var qqPlaybackQualityCeiling = '';
 var coverCropState = null, coverCropBound = false;
 var currentLocalSong = null;
@@ -12096,7 +12100,7 @@ function normalizeBeatPrefetchState(state) {
 async function fetchBeatPrefetchAudioUrl(song) {
   if (!song) return null;
   var isQQ = songProviderKey(song) === 'qq';
-  var requestedQuality = normalizePlaybackQuality(playbackQuality);
+  var requestedQuality = resolvePlaybackRequestQuality(playbackQuality);
   if (!isQQ && requestedQuality === 'jymaster' && !hasProviderSvip('netease', loginStatus)) requestedQuality = 'hires';
   if (isQQ && qqPlaybackQualityCeiling && (requestedQuality === 'jymaster' || requestedQuality === 'hires' || requestedQuality === 'lossless')) requestedQuality = qqPlaybackQualityCeiling;
   var qualityParam = '&quality=' + encodeURIComponent(requestedQuality);
@@ -16889,6 +16893,7 @@ async function apiJson(url, opts) {
 function escHtml(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function normalizePlaybackQuality(value) {
   value = String(value || '').toLowerCase();
+  if (value === 'auto' || value === 'automatic' || value === 'adaptive') return 'auto';
   if (value === 'jymaster' || value === 'master' || value === 'svip') return 'jymaster';
   if (value === 'hires' || value === 'hi-res' || value === 'highres' || value === 'highest') return 'hires';
   if (value === 'lossless' || value === 'flac' || value === 'sq') return 'lossless';
@@ -16898,6 +16903,7 @@ function normalizePlaybackQuality(value) {
 }
 function playbackQualityLabel(value) {
   value = normalizePlaybackQuality(value);
+  if (value === 'auto') return '自动';
   if (value === 'jymaster') return '超清母带';
   if (value === 'hires') return '高清臻音';
   if (value === 'lossless') return '无损';
@@ -16907,6 +16913,7 @@ function playbackQualityLabel(value) {
 }
 function playbackQualityShortLabel(value) {
   value = normalizePlaybackQuality(value);
+  if (value === 'auto') return '自动';
   if (value === 'jymaster') return '母带';
   if (value === 'hires') return '臻音';
   if (value === 'lossless') return 'SQ';
@@ -16916,6 +16923,7 @@ function playbackQualityShortLabel(value) {
 }
 function playbackQualityRank(value) {
   value = normalizePlaybackQuality(value);
+  if (value === 'auto') return 0;
   if (value === 'jymaster') return 5;
   if (value === 'hires') return 4;
   if (value === 'lossless') return 3;
@@ -16940,27 +16948,39 @@ function playbackResolvedQualityText(data) {
 }
 function readPlaybackQualityPreference() {
   try {
-    return normalizePlaybackQuality(localStorage.getItem(PLAYBACK_QUALITY_STORE_KEY) || 'hires');
+    var stored = localStorage.getItem(PLAYBACK_QUALITY_STORE_KEY);
+    var modeVersion = localStorage.getItem(PLAYBACK_QUALITY_MODE_STORE_KEY);
+    // Earlier builds always saved the implicit Hi-Res default. Migrate that
+    // legacy value to adaptive mode; later explicit choices stay untouched.
+    if (!stored || (!modeVersion && stored === 'hires')) return 'auto';
+    return normalizePlaybackQuality(stored);
   } catch (e) {
-    return 'hires';
+    return 'auto';
   }
 }
 function savePlaybackQualityPreference() {
-  try { localStorage.setItem(PLAYBACK_QUALITY_STORE_KEY, playbackQuality); } catch (e) {}
+  try {
+    localStorage.setItem(PLAYBACK_QUALITY_STORE_KEY, playbackQuality);
+    localStorage.setItem(PLAYBACK_QUALITY_MODE_STORE_KEY, '1');
+  } catch (e) {}
 }
 function updatePlaybackQualityUi() {
   var label = document.getElementById('quality-btn-label');
   var btn = document.getElementById('quality-btn');
   var canUseSvip = hasProviderSvip('netease', loginStatus);
+  var automatic = playbackQuality === 'auto';
   var displayQuality = playbackQuality === 'jymaster' && !canUseSvip ? 'hires' : playbackQuality;
-  if (label) label.textContent = playbackQualityShortLabel(displayQuality);
-  if (btn) btn.title = playbackQuality === 'jymaster' && !canUseSvip
+  var activeQuality = automatic ? playbackAutoQuality : displayQuality;
+  if (label) label.textContent = automatic ? '自动' : playbackQualityShortLabel(displayQuality);
+  if (btn) btn.title = automatic
+    ? '自动音质 · 当前 ' + playbackQualityLabel(activeQuality)
+    : playbackQuality === 'jymaster' && !canUseSvip
     ? '音质: ' + playbackQualityLabel(displayQuality) + ' · 超清母带需网易云 SVIP'
     : '音质: ' + playbackQualityLabel(displayQuality);
   document.querySelectorAll('.quality-option').forEach(function(option){
     var q = normalizePlaybackQuality(option.dataset.quality);
     var locked = option.dataset.svip === '1' && !canUseSvip;
-    option.classList.toggle('active', q === displayQuality);
+    option.classList.toggle('active', automatic ? q === 'auto' : q === displayQuality);
     option.classList.toggle('locked', locked);
     option.disabled = locked;
     option.title = locked ? '需要网易云 SVIP 账号' : playbackQualityLabel(q);
@@ -16973,12 +16993,13 @@ function setPlaybackQuality(value) {
     if (!hasPlatformLogin('netease')) openProviderLogin('netease');
     return;
   }
+  if (next === 'auto') playbackAutoQuality = 'exhigh';
   playbackQuality = next;
   savePlaybackQualityPreference();
   updatePlaybackQualityUi();
   var wrap = document.getElementById('quality-control');
   if (wrap) wrap.classList.remove('open');
-  applyPlaybackQualityToCurrentTrack(next);
+  applyPlaybackQualityToCurrentTrack(next === 'auto' ? playbackAutoQuality : next);
 }
 function canReloadCurrentTrackForQuality() {
   if (currentIdx < 0 || currentIdx >= playQueue.length) return false;
@@ -16987,8 +17008,14 @@ function canReloadCurrentTrackForQuality() {
   if (!song || song.type === 'local' || song.source === 'local') return false;
   return songProviderKey(song) === 'netease' || songProviderKey(song) === 'qq';
 }
+function resolvePlaybackRequestQuality(value) {
+  var quality = normalizePlaybackQuality(value);
+  if (quality === 'auto') quality = normalizePlaybackQuality(playbackAutoQuality || 'exhigh');
+  return quality === 'auto' ? 'exhigh' : quality;
+}
 function applyPlaybackQualityToCurrentTrack(nextQuality) {
-  var label = playbackQualityLabel(nextQuality || playbackQuality);
+  var resolvedQuality = resolvePlaybackRequestQuality(nextQuality || playbackQuality);
+  var label = playbackQualityLabel(resolvedQuality);
   if (!canReloadCurrentTrackForQuality()) {
     showToast('音质偏好: ' + label + ' · 下次播放生效');
     return;
@@ -16996,7 +17023,7 @@ function applyPlaybackQualityToCurrentTrack(nextQuality) {
   var resumeAt = audio && isFinite(audio.currentTime) ? audio.currentTime : 0;
   showToast('正在切换音质: ' + label);
   Promise.resolve(playQueueAt(currentIdx, {
-    qualityOverride: nextQuality || playbackQuality,
+    qualityOverride: resolvedQuality,
     qualitySwitch: true,
     resumeAt: resumeAt,
     preserveHomeState: true,
@@ -17004,6 +17031,75 @@ function applyPlaybackQualityToCurrentTrack(nextQuality) {
     console.warn('[QualitySwitch]', e);
     showToast('音质切换失败，已保留偏好');
   }).finally(forcePlaybackControlsInteractive);
+}
+function clearAdaptivePlaybackStallTimer() {
+  if (adaptivePlaybackState.stallTimer) {
+    clearTimeout(adaptivePlaybackState.stallTimer);
+    adaptivePlaybackState.stallTimer = null;
+  }
+}
+function resetAdaptivePlaybackForTrack(token) {
+  clearAdaptivePlaybackStallTimer();
+  adaptivePlaybackState.token = token || 0;
+  adaptivePlaybackState.stallEvents = [];
+  adaptivePlaybackState.switching = false;
+  adaptivePlaybackState.exhausted = false;
+}
+function nextAdaptivePlaybackQuality(current) {
+  var sequence = ['hires', 'lossless', 'exhigh', 'standard'];
+  var index = sequence.indexOf(resolvePlaybackRequestQuality(current));
+  if (index < 0) index = sequence.indexOf('exhigh');
+  return sequence[index + 1] || '';
+}
+function isAdaptivePlaybackActive(media) {
+  return playbackQuality === 'auto' && media === audio && !adaptivePlaybackState.switching &&
+    !adaptivePlaybackState.exhausted && !media.paused && !media.ended &&
+    adaptivePlaybackState.token === trackSwitchToken && Number(media.currentTime || 0) > 2;
+}
+function registerAdaptivePlaybackStall(media) {
+  if (!isAdaptivePlaybackActive(media) || adaptivePlaybackState.stallTimer) return;
+  adaptivePlaybackState.stallTimer = setTimeout(function(){
+    adaptivePlaybackState.stallTimer = null;
+    if (!isAdaptivePlaybackActive(media) || media.readyState >= 3) return;
+    var now = Date.now();
+    adaptivePlaybackState.stallEvents = adaptivePlaybackState.stallEvents.filter(function(at){ return now - at < 30000; });
+    adaptivePlaybackState.stallEvents.push(now);
+    // Ignore a one-off CDN hiccup. Two sustained buffers in 30 seconds means
+    // the selected stream is not sustainable on the current route.
+    if (adaptivePlaybackState.stallEvents.length < 2) return;
+    var nextQuality = nextAdaptivePlaybackQuality(playbackAutoQuality);
+    if (!nextQuality) {
+      adaptivePlaybackState.exhausted = true;
+      return;
+    }
+    adaptivePlaybackState.switching = true;
+    playbackAutoQuality = nextQuality;
+    updatePlaybackQualityUi();
+    var resumeAt = Number(media.currentTime) || 0;
+    showSourceFallbackNotice('网络波动', '检测到连续缓冲，已自动切换到 ' + playbackQualityLabel(nextQuality));
+    Promise.resolve(playQueueAt(currentIdx, {
+      qualityOverride: nextQuality,
+      qualitySwitch: true,
+      resumeAt: resumeAt,
+      preserveHomeState: true,
+      adaptiveQualitySwitch: true,
+    })).catch(function(err){
+      console.warn('[AdaptiveQuality]', err);
+    }).finally(function(){
+      adaptivePlaybackState.switching = false;
+      forcePlaybackControlsInteractive();
+    });
+  }, 1100);
+}
+function bindAdaptivePlaybackEvents(audioEl) {
+  if (!audioEl || audioEl._mineradioAdaptiveQualityBound) return;
+  audioEl._mineradioAdaptiveQualityBound = true;
+  ['waiting', 'stalled'].forEach(function(name){
+    audioEl.addEventListener(name, function(){ registerAdaptivePlaybackStall(audioEl); });
+  });
+  ['playing', 'canplay', 'seeked', 'pause', 'ended', 'emptied', 'abort', 'error'].forEach(function(name){
+    audioEl.addEventListener(name, clearAdaptivePlaybackStallTimer);
+  });
 }
 function toggleQualityPanel(e) {
   if (e) e.stopPropagation();
@@ -20226,6 +20322,8 @@ async function playQueueAt(idx, opts) {
   closeGsapModal(document.getElementById('local-beat-modal'));
   beatMapToken++;
   var token = trackSwitchToken;
+  if (playbackQuality === 'auto' && !opts.qualityOverride) playbackAutoQuality = 'exhigh';
+  resetAdaptivePlaybackForTrack(token);
   var firstVisualPlay = !firstPlayDone;
   markPlayPhase('track-setup');
   var song = safePlaybackStep('hydrate-song', function(){ return hydrateCustomCover(playQueue[idx]); }) || playQueue[idx];
@@ -20281,7 +20379,7 @@ async function playQueueAt(idx, opts) {
   try {
     markPlayPhase('source-url');
     var isQQPlayback = songProviderKey(song) === 'qq';
-    var requestedQuality = normalizePlaybackQuality(opts.qualityOverride || playbackQuality);
+    var requestedQuality = resolvePlaybackRequestQuality(opts.qualityOverride || playbackQuality);
     if (!isQQPlayback && requestedQuality === 'jymaster' && !hasProviderSvip('netease', loginStatus)) requestedQuality = 'hires';
     if (isQQPlayback && qqPlaybackQualityCeiling && (requestedQuality === 'jymaster' || requestedQuality === 'hires' || requestedQuality === 'lossless')) {
       requestedQuality = qqPlaybackQualityCeiling;
@@ -20325,6 +20423,7 @@ async function playQueueAt(idx, opts) {
       audio.pause();
     }
     bindPlaybackProgressEvents(audio);
+    bindAdaptivePlaybackEvents(audio);
     applyVolumeToAudio();
     var proxyAudioUrl = window.resolveMineradioApiUrl('/api/audio?url=' + encodeURIComponent(data.url));
     audio.src = proxyAudioUrl;
