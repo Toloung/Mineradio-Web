@@ -1346,14 +1346,14 @@ body.desktop-shell.diy-mode #bottom-bar.stage-mode{left:50%;width:min(1080px,cal
 .pl-detail-row-title{font-size:11.5px;font-weight:650;color:rgba(255,255,255,.86);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-detail-row-artist{display:inline-flex;max-width:100%;border:0;background:transparent;color:rgba(var(--fc-accent-rgb),.68);font:500 10.5px var(--font-sans);padding:0;margin-top:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-detail-row-artist:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
-/* Keep playlist rows on a fixed two-column rhythm. Inline artist buttons used
-   to contribute their baseline to the row, which made covers and text drift
-   apart on narrow/mobile panels. */
-#playlist-panel .pl-detail-row{display:grid!important;grid-template-columns:40px minmax(0,1fr);align-items:center!important;column-gap:10px;min-height:56px;padding:8px 10px}
-#playlist-panel .pl-detail-row>img,#playlist-panel .pl-detail-row>:first-child{grid-column:1;grid-row:1;width:40px!important;height:40px!important;align-self:center;justify-self:start}
-#playlist-panel .pl-detail-row-meta{grid-column:2;grid-row:1;min-width:0!important;align-self:center;display:flex!important;flex-direction:column;justify-content:center;gap:3px}
-#playlist-panel .pl-detail-row-title{min-width:0;line-height:1.32}
-#playlist-panel .pl-detail-row-artist{display:block!important;width:100%;min-width:0;margin:0!important;padding:0!important;text-align:left;line-height:1.28}
+/* Playlist detail rows deliberately share the compact search-result rhythm.
+   The artist is still a button, but must never inherit the global 44px touch
+   target or it expands a two-line track into a tall, misaligned card. */
+#playlist-panel .pl-detail-row{display:flex!important;align-items:center!important;gap:12px;min-height:0!important;padding:10px 12px}
+#playlist-panel .pl-detail-row>img,#playlist-panel .pl-detail-row>:first-child{width:40px!important;height:40px!important;flex:0 0 40px;align-self:center;border-radius:6px!important;object-fit:cover}
+#playlist-panel .pl-detail-row-meta{flex:1 1 auto;min-width:0!important;align-self:center;display:block!important}
+#playlist-panel .pl-detail-row-title{min-width:0;line-height:normal;margin-bottom:2px;font-size:13px;font-weight:500}
+#playlist-panel .pl-detail-row-artist{display:block!important;width:100%;min-width:0!important;min-height:0!important;height:auto!important;margin:0!important;padding:0!important;text-align:left;line-height:normal;font-size:11px;font-weight:300;color:rgba(255,255,255,.35)!important}
 .pl-card.expanded{border-color:rgba(var(--fc-accent-rgb),.32);background:rgba(var(--fc-accent-rgb),.060)}
 .pl-card.podcast-card{border-color:rgba(0,245,212,.075);background:rgba(0,245,212,.030)}
 .pl-card.podcast-card:hover{border-color:rgba(0,245,212,.20);background:rgba(0,245,212,.070)}
