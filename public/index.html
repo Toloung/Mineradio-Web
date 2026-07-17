@@ -1190,19 +1190,11 @@ body.desktop-shell.diy-mode #bottom-bar.stage-mode{left:50%;width:min(1080px,cal
 /* --- 开关组 --- */
 .fx-toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .fx-toggle{min-height:39px;display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-radius:11px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.028);cursor:pointer;transition:all .2s;font-size:11.5px;color:rgba(255,255,255,.72)}
-#t-float{display:none!important}
 .fx-toggle span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px}
 .fx-toggle:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15)}
 .fx-toggle.on{color:var(--fc-accent);border-color:rgba(0,245,212,.34);background:rgba(0,245,212,.07)}
 .fx-toggle .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .2s}
 .fx-toggle.on .dot{background:var(--fc-accent);box-shadow:0 0 10px rgba(0,245,212,.45)}
-.fx-toggle.dev-locked{cursor:not-allowed;color:rgba(255,255,255,.38);background:rgba(255,255,255,.018);border-color:rgba(255,255,255,.045)}
-.fx-toggle.dev-locked:hover{background:rgba(255,255,255,.026);border-color:rgba(255,255,255,.07)}
-.fx-toggle.dev-locked .dot{background:rgba(255,255,255,.10);box-shadow:none}
-.fx-toggle.dev-locked.on{color:rgba(255,255,255,.38)!important;background:rgba(255,255,255,.018)!important;border-color:rgba(255,255,255,.045)!important}
-.fx-dev-badge{display:inline-flex;align-items:center;margin-left:5px;padding:1px 5px;border-radius:999px;border:1px solid rgba(244,210,138,.28);background:rgba(244,210,138,.08);color:rgba(244,210,138,.76);font-style:normal;font-size:9px;font-weight:800;line-height:1.35;vertical-align:1px;letter-spacing:.05em}
-.fx-slider.dev-locked{opacity:.48;filter:saturate(.72)}
-.fx-slider.dev-locked input{cursor:not-allowed}
 
 /* --- 三态分段 --- */
 .fx-seg{display:flex;border-radius:11px;border:1px solid rgba(255,255,255,.08);overflow:hidden;background:rgba(255,255,255,.026);margin-bottom:10px}
@@ -2969,16 +2961,6 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
   </div>
   <div class="cover-color-loupe" id="cover-color-loupe"></div>
   <div class="lyric-color-row">
-    <input id="home-accent-picker" class="lyric-color-picker" type="color" value="#00f5d4" title="Home 填充色">
-    <div class="fx-color-row-label">Home 填充<small id="home-accent-value">#00F5D4</small></div>
-    <button class="fx-mini-btn ghost" type="button" onclick="resetHomeAccentColor()">默认</button>
-  </div>
-  <div class="lyric-color-row">
-    <input id="home-icon-picker" class="lyric-color-picker" type="color" value="#f4d28a" title="主页图标">
-    <div class="fx-color-row-label">主页图标<small id="home-icon-value">#F4D28A</small></div>
-    <button class="fx-mini-btn ghost" type="button" onclick="resetHomeIconColor()">默认</button>
-  </div>
-  <div class="lyric-color-row">
     <input id="visual-icon-picker" class="lyric-color-picker" type="color" value="#7fd8ff" title="视觉图标">
     <div class="fx-color-row-label">视觉图标<small id="visual-icon-value">#7FD8FF</small></div>
     <button class="fx-mini-btn ghost" type="button" onclick="resetVisualIconColor()">默认</button>
@@ -3075,7 +3057,6 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
       <div class="fx-toggle-grid">
         <div class="fx-toggle" id="t-coverParticles" onclick="toggleFx('coverParticles')"><span>显示背景粒子</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-particleSpectrum" onclick="toggleFx('particleSpectrum')"><span>粒子波谱</span><span class="dot"></span></div>
-        <div class="fx-toggle" id="t-float" onclick="toggleFx('floatLayer')"><span>浮空粒子层</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-cinema" onclick="toggleFx('cinema')"><span>电影镜头</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-lyricGlow" onclick="toggleFx('lyricGlow')"><span>歌词溢光</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-lyricGlowBeat" onclick="toggleFx('lyricGlowBeat')"><span>鼓点溢光</span><span class="dot"></span></div>
@@ -3083,25 +3064,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
         <div class="fx-toggle" id="t-lyricCameraLock" onclick="toggleFx('lyricCameraLock')"><span>歌词镜头绑定</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-bloom" onclick="toggleFx('bloom')"><span>粒子溢光</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-edge" onclick="toggleFx('edge')"><span>轮廓高亮</span><span class="dot"></span></div>
-        <div class="fx-toggle" id="t-desktopLyrics" onclick="toggleFx('desktopLyrics')" title="全屏幕置顶歌词"><span>桌面歌词</span><span class="dot"></span></div>
-        <div class="fx-toggle" id="t-desktopLyricsClickThrough" onclick="toggleFx('desktopLyricsClickThrough')" title="锁定后防误触；鼠标移到桌面歌词上按中键可锁定/解锁"><span>桌面歌词锁定</span><span class="dot"></span></div>
-        <div class="fx-toggle" id="t-desktopLyricsCinema" onclick="toggleFx('desktopLyricsCinema')" title="桌面歌词绑定鼓点电影震动，基础漂浮始终保留"><span>桌面歌词电影震动</span><span class="dot"></span></div>
-        <div class="fx-toggle" id="t-desktopLyricsHighlight" onclick="toggleFx('desktopLyricsHighlight')" title="桌面歌词按播放进度高亮"><span>桌面歌词高亮跟随</span><span class="dot"></span></div>
-        <div class="fx-toggle dev-locked" id="t-wallpaperMode" onclick="toggleFx('wallpaperMode')" title="开发中，暂不可用"><span>壁纸模式<em class="fx-dev-badge">开发中</em></span><span class="dot"></span></div>
       </div>
-      <div class="fx-section-label">桌面 / 壁纸</div>
-      <div class="fx-slider"><label>桌面歌词大小</label><input id="fx-desktoplyricssize" type="range" min="0.72" max="1.55" step="0.01"><output></output></div>
-      <div class="fx-slider"><label>桌面歌词透明</label><input id="fx-desktoplyricsopacity" type="range" min="0.28" max="1" step="0.01"><output></output></div>
-      <div class="fx-slider"><label>桌面歌词高度</label><input id="fx-desktoplyricsy" type="range" min="0.08" max="0.92" step="0.01"><output></output></div>
-      <div class="fx-section-label">桌面帧数</div>
-      <div class="fx-seg" id="desktop-lyrics-fps-seg">
-        <button data-desktop-lyrics-fps="24">24</button>
-        <button data-desktop-lyrics-fps="30">30</button>
-        <button data-desktop-lyrics-fps="60">60</button>
-        <button data-desktop-lyrics-fps="120">120</button>
-        <button data-desktop-lyrics-fps="0">无上限</button>
-      </div>
-      <div class="fx-slider dev-locked"><label>壁纸透明度</label><input id="fx-wallpaperopacity" type="range" min="0.35" max="1" step="0.01" disabled><output></output></div>
     </div>
   </div>
 
@@ -23815,9 +23778,6 @@ function updateFxInputs() {
   setRange('fx-bgfade', fx.bgFade);
   updateLyricGlowControls();
   // 同步开关
-  document.getElementById('t-float').classList.toggle('on', fx.floatLayer);
-  var floatToggle = document.getElementById('t-float');
-  if (floatToggle) floatToggle.classList.toggle('on', fx.floatLayer);
   var coverParticlesToggle = document.getElementById('t-coverParticles');
   if (coverParticlesToggle) coverParticlesToggle.classList.toggle('on', fx.coverParticles !== false);
   var particleSpectrumToggle = document.getElementById('t-particleSpectrum');
@@ -24058,10 +24018,6 @@ function ensureLyricPrimaryControls() {
     body.insertBefore(label, grid);
   }
   [
-    't-desktopLyrics',
-    't-desktopLyricsClickThrough',
-    't-desktopLyricsCinema',
-    't-desktopLyricsHighlight',
     't-lyricCameraLock',
     't-lyricGlow',
     't-lyricGlowBeat',
@@ -24101,8 +24057,6 @@ function relabelFxPanelControls() {
   setFxSectionBefore('lyric-source-seg', '歌词来源');
   setFxSectionBefore('lyric-font-grid', '字体与字距');
   setFxSectionBefore('fx-lyricscale', '位置与角度');
-  setFxSectionBefore('fx-desktoplyricssize', '桌面歌词');
-  setFxSectionBefore('desktop-lyrics-fps-seg', '桌面歌词帧率');
   setFxSectionBefore('shelf-seg', '3D 歌单架');
   setFxSectionBefore('shelf-camera-seg', '歌单架镜头');
   setFxSectionBefore('shelf-presence-seg', '歌单架显示');
@@ -24126,10 +24080,6 @@ function relabelFxPanelControls() {
   setFxSliderLabel('fx-lyricz', '前后景深');
   setFxSliderLabel('fx-lyrictiltx', '上下旋转');
   setFxSliderLabel('fx-lyrictilty', '左右旋转');
-  setFxSliderLabel('fx-desktoplyricssize', '桌面歌词大小');
-  setFxSliderLabel('fx-desktoplyricsopacity', '桌面歌词透明度');
-  setFxSliderLabel('fx-desktoplyricsy', '桌面歌词高度');
-  setFxSliderLabel('fx-wallpaperopacity', '壁纸透明度');
   setFxSliderLabel('fx-shelfsize', '歌单架大小');
   setFxSliderLabel('fx-shelfx', '左右位置');
   setFxSliderLabel('fx-shelfy', '上下位置');
