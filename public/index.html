@@ -2191,7 +2191,85 @@ body.has-mobile-nav.simple-mode #fx-panel { display: block !important; }
   #fx-panel .user-archive-grid{grid-template-columns:1fr}
   #fx-panel .user-archive-toolbar{align-items:flex-start;flex-direction:column}
   #fx-panel .user-archive-tools{width:100%;justify-content:stretch}
-  #fx-panel .user-archive-tools .fx-mini-btn{flex:1}
+#fx-panel .user-archive-tools .fx-mini-btn{flex:1}
+}
+
+/* Settings drawer consolidation ------------------------------------------------
+   The player, search results and queue all use a quiet, compact list language.
+   Keep the visual console's capabilities, but express them with the same
+   density: one surface, subtle separators and rows instead of nested cards. */
+#fx-panel{
+  --settings-row:rgba(255,255,255,.035);
+  --settings-row-hover:rgba(255,255,255,.065);
+  --settings-line:rgba(255,255,255,.075);
+  background:rgba(17,18,24,.96)!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  border-radius:16px!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.42)!important;
+  padding:16px!important;
+}
+#fx-panel .fx-head{align-items:center;margin:0 0 12px;padding:0 0 12px;border-bottom-color:var(--settings-line)}
+#fx-panel .fx-title{font-size:15px;font-weight:720;letter-spacing:.02em}
+#fx-panel .fx-sub{margin-top:3px;font-size:10px;letter-spacing:.03em;color:rgba(255,255,255,.40)}
+#fx-panel .fx-head-actions{gap:6px;margin-left:10px}
+#fx-panel .fx-head-actions .fx-mini-btn{min-width:34px!important;width:34px;padding:0;border-radius:9px;font-size:10px}
+#fx-panel .fx-close{width:34px;height:34px;padding:0;border:1px solid var(--settings-line);border-radius:9px;background:var(--settings-row);font-size:19px;display:grid;place-items:center}
+#fx-panel .fx-close:hover{background:var(--settings-row-hover);border-color:rgba(255,255,255,.15)}
+
+#fx-panel .fx-panel-tabs{
+  top:-16px;margin:0 0 14px;padding:3px;gap:2px;border:0;border-radius:10px;
+  background:rgba(255,255,255,.035);box-shadow:none;backdrop-filter:blur(18px) saturate(1.08);-webkit-backdrop-filter:blur(18px) saturate(1.08);
+}
+#fx-panel .fx-panel-tabs button{height:32px;border-radius:8px;font-size:10.5px;color:rgba(255,255,255,.48)}
+#fx-panel .fx-panel-tabs button:hover{background:rgba(255,255,255,.055);color:rgba(255,255,255,.88)}
+#fx-panel .fx-panel-tabs button.active{background:rgba(var(--fc-accent-rgb),.13);box-shadow:none;color:#fff}
+
+#fx-panel .fx-section-label{margin:16px 0 7px;font-size:10px;letter-spacing:.08em;color:rgba(255,255,255,.46)!important}
+#fx-panel .fx-section-label::after{background:rgba(255,255,255,.07)}
+#fx-panel .preset-grid{grid-template-columns:1fr;gap:6px;margin-bottom:8px}
+#fx-panel .preset-card{
+  min-height:62px;padding:10px 42px 10px 12px;border:1px solid var(--settings-line)!important;border-radius:10px!important;
+  background:var(--settings-row)!important;box-shadow:none!important;justify-content:center;
+}
+#fx-panel .preset-card:hover{transform:none;background:var(--settings-row-hover)!important;border-color:rgba(255,255,255,.13)!important}
+#fx-panel .preset-card.active{background:rgba(var(--fc-accent-rgb),.09)!important;border-color:rgba(var(--fc-accent-rgb),.30)!important;box-shadow:inset 3px 0 0 rgba(var(--fc-accent-rgb),.86)!important}
+#fx-panel .preset-card .pc-bg{opacity:.12}
+#fx-panel .preset-card .pc-icon{top:50%;right:12px;width:22px;height:22px;transform:translateY(-50%)}
+#fx-panel .preset-card .pc-name{font-size:12px;font-weight:720}
+#fx-panel .preset-card .pc-desc{margin-top:3px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fx-panel .preset-card.switching::after{display:none}
+
+#fx-panel .user-archive-grid{grid-template-columns:1fr;gap:6px;margin-bottom:8px}
+#fx-panel .user-archive-toolbar{margin:0;padding:9px 10px;border:1px solid var(--settings-line);border-style:solid;border-radius:10px;background:var(--settings-row)}
+#fx-panel .user-archive-note{font-size:10px;line-height:1.4}
+#fx-panel .user-archive-slot{min-height:72px;padding:10px 11px;border:1px solid var(--settings-line);border-radius:10px;background:var(--settings-row)}
+#fx-panel .user-archive-slot.has-save{border-color:rgba(var(--fc-accent-rgb),.18);background:rgba(var(--fc-accent-rgb),.045)}
+#fx-panel .user-archive-slot.is-new{min-height:62px}
+#fx-panel .user-archive-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+#fx-panel .user-archive-actions button{border:1px solid var(--settings-line)!important;background:rgba(255,255,255,.025)!important;box-shadow:none!important}
+
+#fx-panel .fx-fold,#fx-panel .fx-advanced{margin:12px 0 0;padding:0;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#fx-panel .fx-fold-body{padding:0!important}
+#fx-panel .fx-advanced-body{margin-top:0}
+#fx-panel .fx-toggle,#fx-panel .fx-slider,#fx-panel .lyric-color-row{
+  border:1px solid var(--settings-line)!important;background:var(--settings-row)!important;box-shadow:none!important;
+}
+#fx-panel .fx-toggle:hover,#fx-panel .fx-slider:hover,#fx-panel .lyric-color-row:hover{background:var(--settings-row-hover)!important}
+#fx-panel .fx-toggle{min-height:44px;padding:8px 10px}
+#fx-panel .fx-slider{min-height:48px;margin:6px 0;padding:7px 10px}
+#fx-panel .lyric-color-row{min-height:48px;margin:6px 0}
+#fx-panel .fx-seg{margin:6px 0 10px;padding:3px;gap:2px;border:0;border-radius:10px;background:rgba(255,255,255,.035)}
+#fx-panel .fx-seg button{min-height:34px!important;border:0!important;border-radius:8px;background:transparent!important;box-shadow:none!important;color:rgba(255,255,255,.50)}
+#fx-panel .fx-seg button:hover{background:rgba(255,255,255,.055)!important;color:#fff}
+#fx-panel .fx-seg button.active{background:rgba(var(--fc-accent-rgb),.13)!important;box-shadow:none!important}
+#fx-panel .fx-mini-btn{border-color:var(--settings-line)!important;background:rgba(255,255,255,.03)!important;box-shadow:none!important}
+#fx-panel .fx-mini-btn:hover{box-shadow:none!important;background:rgba(255,255,255,.075)!important}
+#fx-panel .fx-actions{padding-top:12px;border-top:1px solid var(--settings-line)}
+
+@media (max-width:520px){
+  #fx-panel{padding:calc(var(--safe-area-top) + 12px) 12px calc(var(--safe-area-bottom) + 12px)!important}
+  #fx-panel .fx-panel-tabs{top:calc(var(--safe-area-top) * -1 - 12px)}
+  #fx-panel .user-archive-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
 /* ---- Toast notifications ---- */
