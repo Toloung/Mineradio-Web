@@ -25901,7 +25901,20 @@ function startQQLoginStatusAutoRefresh() {
 function renderUserBtn() {
   var btn = document.getElementById('user-btn');
   if (!btn) return;
-  btn.classList.remove('multi-account');
+  btn.classList.remove('multi-account', 'compact-account');
+  // The immersive player only needs an account affordance. Keeping the
+  // nickname/VIP labels here made the compact top-right control expand and
+  // drop text below the avatar, so render one stable avatar instead.
+  if (document.body.classList.contains('web-player-stage-only') && hasAnyPlatformLogin()) {
+    activeAccountProvider = firstLoggedProvider();
+    var compactStatus = platformStatus(activeAccountProvider);
+    var compactMeta = platformMeta(activeAccountProvider);
+    btn.classList.add('logged-in', 'compact-account');
+    btn.classList.remove('logged-out');
+    btn.title = (compactStatus.nickname || compactMeta.label) + ' · 账号信息';
+    btn.innerHTML = '<img id="user-avatar" src="' + providerAvatarSrc(activeAccountProvider, compactStatus) + '" alt="">';
+    return;
+  }
   if (dualAccountMode && hasAnyPlatformLogin()) {
     activeAccountProvider = firstLoggedProvider();
     btn.classList.add('logged-in', 'multi-account');
