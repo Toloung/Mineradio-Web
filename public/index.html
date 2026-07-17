@@ -17193,9 +17193,21 @@ function updateShelfCardHoverSelection(e) {
   if (hit && hit.card) shelfManager.setSelected(hit.card.index);
   else shelfManager.clearSelected();
 }
-function isShelfPlaylistPlayHit(hit) {
-  if (!hit || !hit.card || !hit.uv || !hit.card.item || hit.card.item.type !== 'playlist') return false;
-  return hit.uv.x >= 0.49 && hit.uv.x <= 0.72 && hit.uv.y >= 0.13 && hit.uv.y <= 0.42;
+  function isShelfPlaylistPlayHit(hit, event) {
+    if (!hit || !hit.card || !hit.uv || !hit.card.item || hit.card.item.type !== 'playlist') return false;
+    function isPlayArea(uv) {
+      return !!uv && uv.x >= 0.44 && uv.x <= 0.76 && uv.y >= 0.07 && uv.y <= 0.50;
+    }
+    // Prefer the raycast UV, but use the card's projected screen rectangle as
+    // a fallback. Canvas textures and oblique shelf cards can otherwise make
+    // the painted play pill and the narrow raycast region disagree by a few
+    // pixels, which made a visibly clicked play button appear inert.
+    if (isPlayArea(hit.uv)) return true;
+    if (event && shelfManager && shelfManager.pickCardAtScreen) {
+      var screenHit = shelfManager.pickCardAtScreen(event.clientX, event.clientY, 6);
+      if (screenHit && screenHit.card === hit.card && isPlayArea(screenHit.uv)) return true;
+    }
+    return false;
 }
 renderer.domElement.addEventListener('click', function(e){
   if (!shelfManager || shelfManager.getMode() === 'off') return;
@@ -17258,8 +17270,8 @@ renderer.domElement.addEventListener('click', function(e){
   if (hit) {
     if (mode === 'side') setShelfPinnedOpen(true, true);
     var idx = hit.card.index;
-    if (Math.abs(idx - shelfManager.getCenterIdx()) < 0.5) {
-      if (isShelfPlaylistPlayHit(hit) && shelfManager.playPlaylistAt && shelfManager.playPlaylistAt(idx)) return;
+    if (hit.card.isCenter || Math.abs(idx - shelfManager.getCenterIdx()) < 0.5) {
+      if (isShelfPlaylistPlayHit(hit, e) && shelfManager.playPlaylistAt && shelfManager.playPlaylistAt(idx)) return;
       shelfManager.openContent(idx);
     } else {
       shelfManager.scrollBy(idx - shelfManager.getCenterIdx());
