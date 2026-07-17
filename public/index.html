@@ -1307,6 +1307,11 @@ body.desktop-shell.diy-mode #bottom-bar.stage-mode{left:50%;width:min(1080px,cal
 .qi-sub{font-size:10.5px;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .queue-artist-link{max-width:100%;border:0;background:transparent;color:rgba(var(--fc-accent-rgb),.64);font:inherit;padding:0;margin:0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .queue-artist-link:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+/* Artist links are buttons, but queue rows use the same compact two-line
+   typography as search results. Do not let the general 44px touch target
+   create an artificial gap between the title and artist. */
+#playlist-panel .qi-sub{margin-top:2px;line-height:normal}
+#playlist-panel .queue-artist-link{display:block!important;min-width:0!important;min-height:0!important;height:auto!important;line-height:normal!important}
 .qi-act{display:flex;gap:4px;position:absolute;top:50%;right:8px;transform:translateY(-50%);opacity:0;pointer-events:none;transition:opacity .15s}
 .queue-item:hover .qi-act{opacity:1;pointer-events:auto}
 .qi-act button{width:24px;height:24px;border:none;border-radius:5px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.55);cursor:pointer;font-size:13px;line-height:1}
