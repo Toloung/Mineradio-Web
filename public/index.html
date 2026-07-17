@@ -3080,6 +3080,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
 <div id="fx-panel">
   <div class="fx-head">
     <div><div class="fx-title">视觉控制台</div><div class="fx-sub">MINERADIO VISUALS · 鼠标移开自动隐藏</div></div>
+    <div class="fx-head-actions"><button id="web-settings-close" class="fx-close mobile-panel-close web-settings-close" type="button" onclick="toggleFxPanel(false)" aria-label="关闭设置" title="关闭">×</button></div>
   </div>
 
   <div class="fx-section-label">视觉预设</div>
@@ -3331,6 +3332,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
     <div class="queue-head-act">
       <button id="playlist-pin-btn" class="fx-mini-btn ghost playlist-pin-btn" onclick="togglePlaylistPanelPinned()" title="常开歌单" aria-label="常开歌单"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6"/><path d="M5 15l4 4"/><path d="M14 4l-2 5-4 4-3 2 4 4 2-3 4-4 5-2z"/><path d="M9 19l-4 4"/></svg></button>
       <button class="fx-mini-btn ghost" onclick="shuffleQueue()">随机</button>
+      <button class="fx-close mobile-panel-close" type="button" onclick="togglePlaylistPanel(false)" aria-label="关闭歌单" title="关闭">×</button>
     </div>
   </div>
   <div class="panel-tabs">
@@ -3955,7 +3957,11 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
     }
 
     function closeMobilePanels(keep) {
-      if (keep !== 'playlist' && typeof togglePlaylistPanel === 'function') togglePlaylistPanel(false);
+      if (keep !== 'playlist' && typeof togglePlaylistPanel === 'function') {
+        togglePlaylistPanel(false);
+        var playlistPanel = document.getElementById('playlist-panel');
+        if (playlistPanel) playlistPanel.classList.remove('peek');
+      }
       if (keep !== 'settings' && typeof toggleFxPanel === 'function') toggleFxPanel(false);
       if (keep !== 'queue' && typeof closeMiniQueue === 'function') closeMiniQueue();
       if (keep !== 'search') {
@@ -3965,6 +3971,23 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
         if (searchArea) searchArea.classList.remove('peek');
       }
     }
+
+    // Sheets leave part of the visual stage visible on phones.  Tapping that
+    // untouched area should always return to playback without hunting for a
+    // tiny close icon.
+    document.addEventListener('click', function(e) {
+      if (!e.target || !e.target.closest) return;
+      var target = e.target;
+      var fxPanel = document.getElementById('fx-panel');
+      var playlistPanel = document.getElementById('playlist-panel');
+      if (fxPanel && (fxPanel.classList.contains('show') || fxPanel.classList.contains('peek')) && !target.closest('#fx-panel, #mobile-nav')) {
+        toggleFxPanel(false);
+      }
+      if (playlistPanel && (playlistPanel.classList.contains('show') || playlistPanel.classList.contains('peek')) && !target.closest('#playlist-panel, #mobile-nav')) {
+        togglePlaylistPanel(false);
+        playlistPanel.classList.remove('peek');
+      }
+    });
 
     // Tap bottom area to toggle nav
     trigger.addEventListener('click', function(e) {

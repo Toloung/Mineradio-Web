@@ -228,13 +228,14 @@
   body.has-mobile-nav #fx-panel {
     position: fixed !important;
     z-index: 900 !important;
-    top: calc(var(--safe-area-top) + 8px) !important;
-    right: 8px !important;
-    bottom: 8px !important;
-    left: 8px !important;
+    top: auto !important;
+    right: 10px !important;
+    bottom: var(--mobile-safe-bottom) !important;
+    left: 10px !important;
     width: auto !important;
     max-width: none !important;
-    max-height: none !important;
+    height: min(76dvh, 680px) !important;
+    max-height: calc(100dvh - var(--mobile-safe-bottom) - 82px) !important;
     padding: 16px 14px calc(16px + var(--safe-area-bottom)) !important;
     overflow: auto !important;
     border: 1px solid var(--mobile-line) !important;
@@ -265,6 +266,46 @@
     z-index: 3 !important;
     padding-top: 4px !important;
     background: #17181f !important;
+  }
+
+  body.has-mobile-nav .mobile-panel-close {
+    display: grid !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    place-items: center !important;
+    border: 1px solid var(--mobile-line) !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, .045) !important;
+    color: rgba(255, 255, 255, .72) !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+  }
+
+  body.has-mobile-nav .mobile-panel-close:active {
+    background: rgba(255, 255, 255, .12) !important;
+    color: #fff !important;
+  }
+
+  body.has-mobile-nav #fx-panel .fx-head-actions {
+    margin-left: auto !important;
+  }
+
+  body.has-mobile-nav #playlist-panel .queue-head-act {
+    gap: 6px !important;
+  }
+
+  body.has-mobile-nav #playlist-panel #playlist-pin-btn {
+    display: none !important;
+  }
+
+  body.has-mobile-nav #playlist-panel .queue-head-act .fx-mini-btn:not(.mobile-panel-close) {
+    min-width: 54px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 0 10px !important;
   }
 
   body.has-mobile-nav #fx-panel .fx-panel-tabs {

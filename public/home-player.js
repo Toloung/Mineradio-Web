@@ -119,11 +119,12 @@
 
   function ensureSettingsCloseButton() {
     var head = document.querySelector('#fx-panel .fx-head');
-    if (!head || document.getElementById('web-settings-close')) return;
+    if (!head) return;
     var title = head.querySelector('.fx-title');
     var sub = head.querySelector('.fx-sub');
     if (title) title.textContent = '\u8bbe\u7f6e';
     if (sub) sub.textContent = '\u64ad\u653e\u3001\u6b4c\u8bcd\u4e0e\u89c6\u89c9';
+    if (document.getElementById('web-settings-close')) return;
     var close = document.createElement('button');
     close.id = 'web-settings-close';
     close.className = 'web-settings-close';
