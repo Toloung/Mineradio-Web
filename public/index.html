@@ -546,9 +546,10 @@ html.control-glass-svg-ok #bottom-bar.visible{background:rgba(0,0,0,.10);backdro
 #bottom-bar.soft-hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(88px) scale(.972);filter:none;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
 body.home-controls-locked #bottom-bar{opacity:0!important;pointer-events:none!important;transform:translateX(-50%) translateY(92px) scale(.985)!important;filter:none!important;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
 #bottom-bar.stage-mode{bottom:14px;width:calc(100vw - 56px)}
-#progress-bar{position:relative;z-index:1;align-self:center;width:calc(100% - clamp(86px,10vw,156px));height:4px;margin:4px auto 1px;background:rgba(255,255,255,0.095);border-radius:999px;cursor:pointer;transition:height .2s,background .2s,box-shadow .2s,width .2s;overflow:visible;box-shadow:inset 0 1px 1px rgba(255,255,255,.12),inset 0 -1px 1px rgba(0,0,0,.20)}
-#progress-bar:hover,#progress-bar.is-dragging{height:5px;background:rgba(255,255,255,.14);box-shadow:0 0 18px rgba(var(--fc-accent-rgb),.10),inset 0 1px 1px rgba(255,255,255,.18)}
-#progress-fill{height:100%;width:0%;background:linear-gradient(90deg,rgba(255,255,255,.92),rgba(var(--fc-accent-rgb),.74));border-radius:999px;transition:width .12s linear;box-shadow:0 0 16px rgba(var(--fc-accent-rgb),.18)}
+#progress-bar{position:relative;z-index:1;align-self:center;width:calc(100% - clamp(86px,10vw,156px));height:18px;margin:-3px auto -2px;border-radius:999px;background:transparent;cursor:pointer;touch-action:none;transition:width .2s;overflow:visible}
+#progress-bar::before{content:'';position:absolute;left:0;right:0;top:50%;height:4px;border-radius:999px;background:rgba(255,255,255,.095);box-shadow:inset 0 1px 1px rgba(255,255,255,.12),inset 0 -1px 1px rgba(0,0,0,.20);transform:translateY(-50%);transition:height .2s,background .2s,box-shadow .2s}
+#progress-bar:hover::before,#progress-bar.is-dragging::before{height:5px;background:rgba(255,255,255,.14);box-shadow:0 0 18px rgba(var(--fc-accent-rgb),.10),inset 0 1px 1px rgba(255,255,255,.18)}
+#progress-fill{position:absolute;z-index:1;left:0;top:50%;height:4px;width:0%;background:linear-gradient(90deg,rgba(255,255,255,.92),rgba(var(--fc-accent-rgb),.74));border-radius:999px;transform:translateY(-50%);transition:width .12s linear;box-shadow:0 0 16px rgba(var(--fc-accent-rgb),.18)}
 #progress-thumb{position:absolute;left:0;top:50%;width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0,#fff 28%,rgba(194,235,255,.86) 74%);box-shadow:0 0 0 1px rgba(255,255,255,.34),0 0 18px rgba(178,229,255,.28);transform:translate(-50%,-50%) scale(.72);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s}
 #progress-bar:hover #progress-thumb,#progress-bar.is-dragging #progress-thumb{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #progress-thumb::before,#progress-thumb::after{content:'';position:absolute;left:50%;top:50%;width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 10px rgba(255,68,88,.42);opacity:0;transform:translate(-50%,-50%)}
@@ -761,8 +762,9 @@ body.immersive-mode .modal-mask{opacity:0!important;visibility:hidden!important;
 body.immersive-mode .modal-mask{display:none!important}
 body.immersive-mode #bottom-bar.visible{z-index:32;bottom:22px;width:min(620px,calc(100vw - 56px));padding:10px 20px 13px;gap:9px;border-radius:22px;background:radial-gradient(circle at 20% 0%,rgba(255,255,255,.13),transparent 35%),linear-gradient(112deg,rgba(255,255,255,.060),rgba(12,15,18,.45) 52%,rgba(2,4,7,.58));border-color:rgba(255,255,255,.060);box-shadow:0 20px 70px rgba(0,0,0,.32),0 0 42px rgba(152,221,255,.055),inset 0 1px 0 rgba(255,255,255,.15),inset 0 -22px 58px rgba(0,0,0,.18);backdrop-filter:blur(46px) saturate(1.36);-webkit-backdrop-filter:blur(46px) saturate(1.36)}
 body.immersive-mode #bottom-bar.soft-hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(96px) scale(.97);filter:none;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
-body.immersive-mode #progress-bar{height:4px;background:rgba(255,255,255,.10)}
-body.immersive-mode #progress-bar:hover,body.immersive-mode #progress-bar.is-dragging{height:5px;background:rgba(255,255,255,.14)}
+body.immersive-mode #progress-bar{height:18px;background:transparent}
+body.immersive-mode #progress-bar::before{background:rgba(255,255,255,.10)}
+body.immersive-mode #progress-bar:hover::before,body.immersive-mode #progress-bar.is-dragging::before{background:rgba(255,255,255,.14)}
 body.immersive-mode #controls{display:flex;align-items:center;justify-content:center;gap:16px}
 body.immersive-mode .control-cluster{grid-column:auto!important;justify-content:center;height:64px;gap:14px}
 body.immersive-mode .control-cluster.actions{display:none}
@@ -3472,7 +3474,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
     </div>
     <div id="mini-queue-list" class="mini-queue-list"></div>
   </div>
-  <div id="progress-bar"><div id="progress-fill"></div><div id="progress-thumb" aria-hidden="true"></div></div>
+  <div id="progress-bar" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0"><div id="progress-fill"></div><div id="progress-thumb" aria-hidden="true"></div></div>
   <div id="controls">
     <div class="control-cluster actions">
       <div class="control-track">
@@ -22532,8 +22534,10 @@ function getPlaybackCurrentSeconds() {
 }
 function setProgressVisual(percent) {
   percent = clampRange(percent || 0, 0, 100);
+  var bar = document.getElementById('progress-bar');
   var fill = document.getElementById('progress-fill');
   var thumb = document.getElementById('progress-thumb');
+  if (bar) bar.setAttribute('aria-valuenow', String(Math.round(percent)));
   if (fill) fill.style.width = percent + '%';
   if (thumb) thumb.style.left = percent + '%';
 }
@@ -22577,18 +22581,23 @@ function emitProgressDragParticles(x, y) {
 }
 function seekFromProgressPointer(e, emitParticles) {
   var durationSec = getPlaybackDurationSeconds();
-  if (!audio || !durationSec) return;
+  if (!audio || !durationSec || !isFinite(durationSec)) return false;
   var bar = document.getElementById('progress-bar');
+  if (!bar) return false;
   var rect = bar.getBoundingClientRect();
+  if (!rect.width) return false;
   var ratio = clampRange((e.clientX - rect.left) / rect.width, 0, 1);
   audio.currentTime = ratio * durationSec;
   setProgressVisual(ratio * 100);
   syncBeatMapPlaybackCursor(audio.currentTime);
   if (emitParticles) emitProgressDragParticles(e.clientX, rect.top + rect.height / 2);
+  return true;
 }
 var progressBar = document.getElementById('progress-bar');
 progressBar.addEventListener('pointerdown', function(e){
-  if (!audio || !audio.duration) return;
+  if (!audio || !getPlaybackDurationSeconds()) return;
+  e.preventDefault();
+  e.stopPropagation();
   progressDragState.active = true;
   progressBar.classList.add('is-dragging');
   try { progressBar.setPointerCapture(e.pointerId); } catch (err) {}
@@ -22596,6 +22605,7 @@ progressBar.addEventListener('pointerdown', function(e){
 });
 progressBar.addEventListener('pointermove', function(e){
   if (!progressDragState.active) return;
+  e.preventDefault();
   seekFromProgressPointer(e, true);
 });
 function endProgressDrag(e) {
@@ -22607,6 +22617,20 @@ function endProgressDrag(e) {
 progressBar.addEventListener('pointerup', endProgressDrag);
 progressBar.addEventListener('pointercancel', endProgressDrag);
 progressBar.addEventListener('lostpointercapture', function(){ progressDragState.active = false; progressBar.classList.remove('is-dragging'); });
+progressBar.addEventListener('keydown', function(e){
+  var durationSec = getPlaybackDurationSeconds();
+  if (!audio || !durationSec) return;
+  var next = null;
+  if (e.key === 'ArrowLeft') next = Math.max(0, (Number(audio.currentTime) || 0) - 5);
+  else if (e.key === 'ArrowRight') next = Math.min(durationSec, (Number(audio.currentTime) || 0) + 5);
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = durationSec;
+  if (next == null) return;
+  e.preventDefault();
+  audio.currentTime = next;
+  setProgressVisual(next / durationSec * 100);
+  syncBeatMapPlaybackCursor(next);
+});
 setInterval(function(){
   if (!audio) { updatePlaybackProgressUi(); return; }
   updateListenStatsTick(false);

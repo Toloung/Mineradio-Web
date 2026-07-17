@@ -120,8 +120,13 @@
 
   body.has-mobile-nav #progress-bar {
     width: 100% !important;
-    height: 2px !important;
-    margin: 0 0 5px !important;
+    height: 18px !important;
+    margin: -6px 0 -1px !important;
+    background: transparent !important;
+  }
+
+  body.has-mobile-nav #progress-bar::before {
+    height: 3px !important;
     background: rgba(255, 255, 255, .12) !important;
   }
 
