@@ -97,11 +97,11 @@ body.web-player-layout .pl-detail-play:hover { background: var(--ui-accent-hover
 /* Settings drawer */
 body.web-player-layout #fx-panel {
   top: 84px !important;
-  right: -480px !important;
+  right: -440px !important;
   bottom: 106px !important;
-  width: 440px !important;
+  width: 400px !important;
   max-height: none !important;
-  padding: 18px 18px 22px !important;
+  padding: 18px !important;
   border-color: var(--ui-line) !important;
   border-radius: var(--ui-radius-lg) !important;
   transform: translateX(12px) !important;
@@ -243,8 +243,8 @@ body.web-player-layout .mini-queue-list::-webkit-scrollbar-thumb { background: r
 @media (max-width:1000px) {
   body.web-player-layout.empty-home-active #playlist-panel.show,
   body.web-player-layout.empty-home-active #playlist-panel.peek { left: 76px !important; }
-  body.web-player-layout #playlist-panel { width: min(390px,calc(100vw - 100px)) !important; }
-  body.web-player-layout #fx-panel { width: min(420px,calc(100vw - 48px)) !important; }
+  body.web-player-layout #playlist-panel,
+  body.web-player-layout #fx-panel { width: min(390px,calc(100vw - 100px)) !important; }
 }
 @media (max-width:760px) {
   body.web-player-layout #playlist-panel,
