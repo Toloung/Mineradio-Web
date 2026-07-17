@@ -15807,7 +15807,9 @@ function makeShelfManager() {
     openCardIdx = -1;
     setShelfPinnedOpen(false, true);
     if (typeof setFocusZone === 'function') setFocusZone(null, true);
-    loadPlaylistIntoQueueById(action.playlistId, true, action.title || (card.item && card.item.title) || '');
+    // 歌单架点击属于明确的用户手势；将其传给播放链路，避免异步加载后
+    // 被浏览器当成自动播放而拒绝。
+    loadPlaylistIntoQueueById(action.playlistId, true, action.title || (card.item && card.item.title) || '', { manual: true });
     return true;
   }
 
@@ -17053,7 +17055,7 @@ function makeContentListManager() {
       safeRenderQueuePanel('content-play-row');
       safeShelfRebuild('content-play-row');
       forcePlaybackControlsInteractive();
-      playQueueAt(playIndex, { preserveHomeState: true }).catch(function(e){
+      playQueueAt(playIndex, { preserveHomeState: true, manual: true }).catch(function(e){
         console.warn('[ContentPlayRow]', e);
       });
       // 关闭内容框
@@ -22461,8 +22463,9 @@ async function loadPodcastRadioIntoQueue(id, autoplay, title) {
     hideLoading();
   }
 }
-async function loadPlaylistIntoQueueById(id, autoplay, title) {
+async function loadPlaylistIntoQueueById(id, autoplay, title, playbackOptions) {
   if (!id) return;
+  playbackOptions = playbackOptions || {};
   homeForcedOpen = false;
   homeSuppressed = false;
   updateEmptyHomeVisibility();
@@ -22492,7 +22495,7 @@ async function loadPlaylistIntoQueueById(id, autoplay, title) {
     forcePlaybackControlsInteractive();
     if (autoplay) {
       try {
-        await playQueueAt(0);
+        await playQueueAt(0, { manual: !!playbackOptions.manual });
       } catch (playErr) {
         console.warn('[PlaylistAutoplay]', id, playErr);
         showToast('歌单已载入，播放启动失败');
