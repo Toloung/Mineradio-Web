@@ -2094,6 +2094,30 @@ body:not(.desktop-shell) #fx-panel {
    rules have been applied. */
 body.has-mobile-nav.simple-mode #fx-panel { display: block !important; }
 
+/* Dense settings controls must not inherit the application's global 44px
+   button floor. It made segmented labels, icon buttons and colour rows exceed
+   their grid columns. Keep the comfortable panel padding while allowing each
+   control to shrink and ellipsize inside its own cell. */
+#fx-panel button{min-width:0!important;min-height:32px!important}
+#fx-panel .fx-mini-btn{height:32px!important;min-height:32px!important;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fx-panel .fx-seg button{min-height:34px!important;padding:6px 4px;line-height:1.15;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fx-panel .fx-font-grid button,#fx-panel .user-archive-actions button{min-height:32px!important;min-width:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fx-panel .fx-slider{grid-template-columns:minmax(72px,92px) minmax(0,1fr) 44px 28px;min-width:0}
+#fx-panel .fx-slider>*{min-width:0}
+#fx-panel .fx-slider output{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fx-panel .lyric-color-row{min-width:0}
+#fx-panel .fx-color-row-label,#fx-panel .lyric-color-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fx-panel .fx-color-row-label small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fx-panel .fx-toggle-grid,#fx-panel .fx-toggle{min-width:0}
+@media (max-width:380px){
+  #fx-panel{padding-left:9px!important;padding-right:9px!important}
+  #fx-panel .lyric-color-row.visual-tint-row{grid-template-columns:38px minmax(0,1fr) 48px 48px;gap:6px;padding:7px}
+  #fx-panel .lyric-color-row{grid-template-columns:38px minmax(0,1fr) 56px;gap:6px;padding:7px}
+  #fx-panel .lyric-color-row.image-pick-row{grid-template-columns:56px minmax(0,1fr) 56px}
+  #fx-panel .lyric-color-picker{width:38px}
+  #fx-panel .fx-slider{grid-template-columns:68px minmax(0,1fr) 38px 24px;gap:6px;padding:8px}
+}
+
 /* ---- Toast notifications ---- */
 body:not(.desktop-shell) #toast {
   top: calc(var(--safe-area-top) + 56px) !important;
@@ -2914,8 +2938,8 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
     <button class="fx-mini-btn ghost" type="button" onclick="resetUiAccentColor()">默认</button>
   </div>
   <div class="lyric-color-row visual-tint-row">
-    <input id="visual-tint-picker" class="lyric-color-picker" type="color" value="#9db8cf" title="视觉主色">
-    <div class="fx-color-row-label">视觉主色<small id="visual-tint-value">封面取色</small></div>
+    <input id="visual-tint-picker" class="lyric-color-picker" type="color" value="#9db8cf" title="粒子主色">
+    <div class="fx-color-row-label">粒子主色<small id="visual-tint-value">封面取色</small></div>
     <button class="fx-mini-btn ghost" id="visual-tint-auto-btn" type="button" onclick="openCoverColorPicker('visualTint')">封面</button>
     <button class="fx-mini-btn ghost" type="button" onclick="resetVisualTintColor()">默认</button>
   </div>
@@ -22910,7 +22934,7 @@ function setVisualTintAuto() {
   updateVisualTintControls();
   syncFxUniforms();
   saveLyricLayout();
-  showToast('视觉主色: 封面取色');
+  showToast('粒子主色: 封面取色');
 }
 function resetVisualTintColor() {
   fx.visualTintMode = 'auto';
@@ -22918,7 +22942,7 @@ function resetVisualTintColor() {
   updateVisualTintControls();
   syncFxUniforms();
   saveLyricLayout();
-  showToast('视觉主色已恢复默认');
+  showToast('粒子主色已恢复默认');
 }
 function setVisualTintCustom(color, silent) {
   fx.visualTintMode = 'custom';
@@ -22926,7 +22950,7 @@ function setVisualTintCustom(color, silent) {
   updateVisualTintControls();
   syncFxUniforms();
   saveLyricLayout();
-  if (!silent) showToast('视觉主色: ' + fx.visualTintColor.toUpperCase());
+  if (!silent) showToast('粒子主色: ' + fx.visualTintColor.toUpperCase());
 }
 var coverColorPickerState = { target: 'visualTint', canvas: null };
 function currentCoverPickerCanvas() {
@@ -22997,7 +23021,7 @@ function applyCoverPickerColor(hex) {
   setCoverPickerPreview(hex);
   if (coverColorPickerState.target === 'visualTint') {
     setVisualTintCustom(hex, true);
-    showToast('视觉主色: ' + hex.toUpperCase());
+    showToast('粒子主色: ' + hex.toUpperCase());
   }
   closeCoverColorPicker();
 }
@@ -23245,7 +23269,9 @@ function syncFxUniforms() {
   if (bloomParticles) bloomParticles.visible = fx.bloom && fx.bloomStrength > 0.01;
   uniforms.uEdgeEnabled.value = fx.edge ? 1 : 0;
   if (uniforms.uTintColor) uniforms.uTintColor.value.set(normalizeHexColor(fx.visualTintColor || '#9db8cf'));
-  if (uniforms.uTintStrength) uniforms.uTintStrength.value = fx.visualTintMode === 'custom' ? 0.42 : 0;
+  /* A chosen particle colour should read as a deliberate visual decision.
+     The old 0.42 mix was often indistinguishable from cover sampling. */
+  if (uniforms.uTintStrength) uniforms.uTintStrength.value = fx.visualTintMode === 'custom' ? 0.72 : 0;
   syncSkullParticleColors();
 }
 var homeWaveTrackState = { bars: 0, smooth: [] };
