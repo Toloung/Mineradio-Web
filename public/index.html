@@ -2109,6 +2109,9 @@ body.has-mobile-nav.simple-mode #fx-panel { display: block !important; }
 #fx-panel .fx-color-row-label,#fx-panel .lyric-color-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #fx-panel .fx-color-row-label small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #fx-panel .fx-toggle-grid,#fx-panel .fx-toggle{min-width:0}
+#fx-panel .fx-reset-one{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;flex:0 0 24px;padding:0!important}
+#fx-panel .fx-reset-one svg,#fx-panel .fx-mini-btn svg,#fx-panel .preset-card svg{flex:0 0 auto;max-width:100%;max-height:100%}
+#fx-panel .fx-toggle .dot{flex:0 0 8px}
 @media (max-width:380px){
   #fx-panel{padding-left:9px!important;padding-right:9px!important}
   #fx-panel .lyric-color-row.visual-tint-row{grid-template-columns:38px minmax(0,1fr) 48px 48px;gap:6px;padding:7px}
@@ -10140,6 +10143,10 @@ function applyLyricPaletteToMesh(mesh) {
   if (data.glowMat) data.glowMat.color.copy(lyricThreeColor(pal.glowColor || pal.secondary || pal.primary, '#9cffdf', 0.36));
   if (data.sparkMat) setLyricSparkColor(data, lyricThreeColor(pal.highlight || pal.secondary || pal.primary, '#fff0b8', 0.46));
   if (data.sunMat) data.sunMat.color.copy(lyricThreeColor(pal.highlight || pal.secondary || pal.primary, '#fff0b8', 0.50));
+  if (data.glyphMat && data.glyphMat.uniforms) {
+    if (data.glyphMat.uniforms.uBaseColor) data.glyphMat.uniforms.uBaseColor.value.copy(lyricThreeColor(pal.primary, '#d6f8ff', 0.42));
+    if (data.glyphMat.uniforms.uHiColor) data.glyphMat.uniforms.uHiColor.value.copy(lyricThreeColor(pal.highlight || pal.primary, '#fff0b8', 0.52));
+  }
 }
 function effectiveLyricPalette(pal) {
   var src = pal || stageLyrics.coverPalette || stageLyrics.palette || {};
@@ -10632,6 +10639,110 @@ function makeLyricShaderMaterial(mask, pal) {
   });
 }
 
+/* Turn the actual lyric mask into a cloud of target points.  This is separate
+   from the soft glow particles: the glyph itself is now made from particles
+   and each character receives its own reveal threshold. */
+function makeLyricGlyphParticles(mask, text, textWorldW, worldW, worldH, pal) {
+  var canvas = mask && mask.texture && mask.texture.image;
+  if (!canvas || !canvas.getContext) return null;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width || mask.width || 2048;
+  var H = canvas.height || mask.height || 384;
+  var image;
+  try { image = ctx.getImageData(0, 0, W, H).data; } catch (e) { return null; }
+  var mobile = isMobileLyricRuntime();
+  var limit = mobile ? 620 : 1320;
+  var stride = mobile ? 9 : 6;
+  var picked = [], seen = 0;
+  var chars = Array.from(String(text || '').replace(/\s/g, '')).length || 1;
+  var range = Math.max(0.001, (mask.textMax || 0.9) - (mask.textMin || 0.1));
+  for (var y = 1; y < H - 1; y += stride) {
+    for (var x = 1; x < W - 1; x += stride) {
+      var alpha = image[(y * W + x) * 4 + 3];
+      if (alpha < 128) continue;
+      /* A small random thinning prevents flat, overly regular dot grids. */
+      if (Math.random() < 0.18) continue;
+      var u = x / W;
+      var v = y / H;
+      var letter = Math.max(0, Math.min(chars - 1, Math.floor(((u - (mask.textMin || 0.1)) / range) * chars))) / chars;
+      var item = { x:(u - 0.5) * worldW, y:(0.5 - v) * worldH, z:(Math.random() - 0.5) * 0.028, letter:letter };
+      seen++;
+      if (picked.length < limit) picked.push(item);
+      else {
+        var slot = Math.floor(Math.random() * seen);
+        if (slot < limit) picked[slot] = item;
+      }
+    }
+  }
+  if (!picked.length) return null;
+  var count = picked.length;
+  var geo = new THREE.BufferGeometry();
+  var rest = new Float32Array(count * 3);
+  var target = new Float32Array(count * 3);
+  var letters = new Float32Array(count);
+  var seeds = new Float32Array(count);
+  var scatterRadius = Math.max(0.95, textWorldW * 0.58, worldH * 1.2);
+  for (var i = 0; i < count; i++) {
+    var p = picked[i];
+    var angle = Math.random() * Math.PI * 2;
+    var radius = scatterRadius * (0.36 + Math.sqrt(Math.random()) * 0.86);
+    rest[i * 3] = Math.cos(angle) * radius;
+    rest[i * 3 + 1] = Math.sin(angle) * radius * 0.50;
+    rest[i * 3 + 2] = -0.10 - Math.random() * 0.42;
+    target[i * 3] = p.x;
+    target[i * 3 + 1] = p.y;
+    target[i * 3 + 2] = p.z;
+    letters[i] = p.letter;
+    seeds[i] = Math.random() * 1000;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(rest, 3));
+  geo.setAttribute('aTarget', new THREE.BufferAttribute(target, 3));
+  geo.setAttribute('aLetter', new THREE.BufferAttribute(letters, 1));
+  geo.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+  var mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uMap:{ value:dotTexture }, uTime:uniforms.uTime, uPixel:uniforms.uPixel,
+      uProgress:{ value:0 }, uMorph:{ value:0 }, uOpacity:{ value:0 },
+      uBass:uniforms.uBass, uBeat:uniforms.uBeat,
+      uBaseColor:{ value:lyricThreeColor(pal.primary, '#d6f8ff', 0.42) },
+      uHiColor:{ value:lyricThreeColor(pal.highlight || pal.primary, '#fff0b8', 0.52) }
+    },
+    vertexShader:[
+      'attribute vec3 aTarget;', 'attribute float aLetter,aSeed;',
+      'uniform float uTime,uPixel,uProgress,uMorph,uBass,uBeat;',
+      'varying float vFormed,vHot,vSeed;',
+      'void main(){',
+      ' float reveal=smoothstep(aLetter+0.008,aLetter+0.075,uProgress);',
+      ' float formed=reveal*smoothstep(0.0,1.0,uMorph);',
+      ' vec3 drift=vec3(sin(uTime*0.72+aSeed)*0.050,cos(uTime*0.63+aSeed*1.7)*0.038,sin(uTime*0.48+aSeed)*0.055);',
+      ' vec3 target=aTarget+drift*(0.14+uBeat*0.12);',
+      ' vec3 pos=mix(position+drift,target,formed);',
+      ' vec4 mv=modelViewMatrix*vec4(pos,1.0);',
+      ' float depth=clamp(2.25/max(0.35,-mv.z),0.55,1.62);',
+      ' gl_PointSize=(3.3+fract(sin(aSeed*13.17)*43758.5453)*2.9+uBass*1.4+uBeat*1.8)*uPixel*depth;',
+      ' gl_Position=projectionMatrix*mv;',
+      ' vFormed=formed; vHot=reveal; vSeed=aSeed;',
+      '}'
+    ].join('\n'),
+    fragmentShader:[
+      'precision highp float;', 'uniform sampler2D uMap;',
+      'uniform vec3 uBaseColor,uHiColor;', 'uniform float uOpacity,uTime;',
+      'varying float vFormed,vHot,vSeed;',
+      'void main(){',
+      ' vec4 dot=texture2D(uMap,gl_PointCoord); if(dot.a<0.02) discard;',
+      ' float tw=0.78+0.22*sin(uTime*1.7+vSeed);',
+      ' vec3 col=mix(uBaseColor,uHiColor,vHot)*tw;',
+      ' gl_FragColor=vec4(col,dot.a*uOpacity*vFormed);',
+      '}'
+    ].join('\n'),
+    transparent:true, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending
+  });
+  var points = new THREE.Points(geo, mat);
+  points.renderOrder = 44;
+  points.frustumCulled = false;
+  return { points:points, material:mat, count:count };
+}
+
 function buildLyricMesh(text) {
   text = String(text || '').replace(/\s+/g, ' ').trim();
   var mask = makeLyricMask(text);
@@ -10694,6 +10805,9 @@ function buildLyricMesh(text) {
   textMesh.renderOrder = 43;
   group.add(textMesh);
 
+  var glyphCloud = makeLyricGlyphParticles(mask, text, textWorldW, worldW, worldH, pal);
+  if (glyphCloud) group.add(glyphCloud.points);
+
   var sparkCount = 132;
   var pgeo = new THREE.BufferGeometry();
   var ppos = new Float32Array(sparkCount * 3);
@@ -10754,6 +10868,7 @@ function buildLyricMesh(text) {
   group.userData.lyric = {
     mask:mask, textMesh:textMesh, readability:readability, glow:glow, sparks:sparks, sun:sun,
     textMat:textMat, readabilityMat:readabilityMat, glowMat:glowMat, sparkMat:pmat, sunMat:sunMat,
+    glyphPoints:glyphCloud && glyphCloud.points, glyphMat:glyphCloud && glyphCloud.material,
     basePositions:ppos.slice ? ppos.slice(0) : new Float32Array(ppos),
     textWorldW:textWorldW, textWorldH:textWorldH, worldW:worldW, worldH:worldH
   };
@@ -10766,6 +10881,7 @@ function updateLyricMeshProgress(mesh, progress) {
   progress = Math.max(0, Math.min(1, progress || 0));
   var d = mesh.userData.lyric;
   d.textMat.uniforms.uProgress.value = progress;
+  if (d.glyphMat && d.glyphMat.uniforms && d.glyphMat.uniforms.uProgress) d.glyphMat.uniforms.uProgress.value = progress;
   mesh.userData.lastLyricProgress = progress;
 }
 
@@ -10995,7 +11111,16 @@ function updateStageLyrics3D(dt) {
       var currentOpacity = data.textMat ? data.textMat.uniforms.uOpacity.value : 0;
       var opacityEase = shelfDetailOpen && currentOpacity > lyricOpacityTarget ? shelfDetailLyricProfile.easeDown : 0.16;
       opacity = clampRange(currentOpacity + (lyricOpacityTarget - currentOpacity) * opacityEase, 0, 1);
-      if (data.textMat) data.textMat.uniforms.uOpacity.value = opacity;
+      /* Keep a faint text-shaped readability layer, while the visible glyph
+         is carried by the point cloud assembling character by character. */
+      if (data.textMat) data.textMat.uniforms.uOpacity.value = data.glyphMat ? opacity * 0.12 : opacity;
+      if (data.glyphMat && data.glyphMat.uniforms) {
+        var glyphOpacity = data.glyphMat.uniforms.uOpacity.value || 0;
+        glyphOpacity += (opacity - glyphOpacity) * 0.16;
+        data.glyphMat.uniforms.uOpacity.value = glyphOpacity;
+        data.glyphMat.uniforms.uMorph.value += (a - data.glyphMat.uniforms.uMorph.value) * 0.18;
+        if (data.glyphPoints) data.glyphPoints.visible = glyphOpacity > 0.01;
+      }
       if (data.readabilityMat) {
         var readabilityTarget = opacity * shelfDetailLyricProfile.readability;
         var readabilityEase = shelfDetailOpen && data.readabilityMat.opacity > readabilityTarget ? 0.28 : 0.16;
@@ -11077,7 +11202,12 @@ function updateStageLyrics3D(dt) {
       return true;
     }
     opacity = (1 - a) * 0.72 * shelfDetailLyricProfile.outgoing;
-    if (data.textMat) data.textMat.uniforms.uOpacity.value = opacity;
+    if (data.textMat) data.textMat.uniforms.uOpacity.value = data.glyphMat ? opacity * 0.10 : opacity;
+    if (data.glyphMat && data.glyphMat.uniforms) {
+      data.glyphMat.uniforms.uOpacity.value = opacity * 0.92;
+      data.glyphMat.uniforms.uMorph.value = 1;
+      if (data.glyphPoints) data.glyphPoints.visible = opacity > 0.01;
+    }
     if (data.readabilityMat) data.readabilityMat.opacity = opacity * (shelfDetailOpen ? shelfDetailLyricProfile.readability : 0.58);
     if (data.textMat && data.textMat.uniforms.uSolar) data.textMat.uniforms.uSolar.value *= shelfDetailOpen ? 0.72 : 0.86;
     if (data.glowMat) data.glowMat.opacity = lyricGlowStrength > 0 ? (shelfDetailOpen ? Math.min(shelfDetailLyricProfile.glowCap * 0.40, opacity * 0.05 * lyricGlowStrength) : opacity * 0.08 * lyricGlowStrength) : 0;
