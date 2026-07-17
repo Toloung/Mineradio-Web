@@ -274,17 +274,25 @@ body.web-player-layout .mini-queue-list::-webkit-scrollbar-thumb { background: r
 .ui-accent-copy { display:grid; gap:4px; min-width:0; }
 .ui-accent-copy strong { color:var(--ui-text); font-size:12px; font-weight:650; }
 .ui-accent-copy small { color:var(--ui-faint); font-size:11px; line-height:1.45; }
-.ui-accent-swatches { display:flex; flex-wrap:wrap; gap:9px; }
-.ui-accent-swatches button {
-  width:26px;
-  height:26px;
-  padding:0;
-  border:2px solid transparent;
+.ui-accent-swatches { display:flex; flex-wrap:wrap; gap:10px; }
+body.web-player-layout #fx-panel .ui-accent-swatches button {
+  display:block !important;
+  box-sizing:border-box !important;
+  flex:0 0 42px !important;
+  width:42px !important;
+  min-width:42px !important;
+  height:42px !important;
+  min-height:42px !important;
+  aspect-ratio:1 / 1;
+  margin:0 !important;
+  padding:0 !important;
+  border:2px solid transparent !important;
   border-radius:50%;
   background:var(--swatch);
   box-shadow:0 0 0 1px var(--ui-line);
+  line-height:0 !important;
   cursor:pointer;
   transition:transform .16s ease,box-shadow .16s ease;
 }
-.ui-accent-swatches button:hover { transform:scale(1.08); }
-.ui-accent-swatches button.active { border-color:var(--ui-panel); box-shadow:0 0 0 2px var(--swatch); }
+body.web-player-layout #fx-panel .ui-accent-swatches button:hover { transform:scale(1.06); }
+body.web-player-layout #fx-panel .ui-accent-swatches button.active { border-color:var(--ui-panel) !important; box-shadow:0 0 0 3px var(--swatch); }
