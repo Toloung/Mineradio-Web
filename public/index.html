@@ -3008,6 +3008,11 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
       <span class="fx-fold-title"><strong>歌词外观</strong><small>颜色 / 来源 / 位置</small></span><span class="arrow">▶</span>
     </div>
     <div class="fx-fold-body">
+      <div class="fx-section-label">歌词模式</div>
+      <div class="fx-seg" id="lyric-render-mode-seg">
+        <button type="button" data-lyric-render-mode="particles" onclick="setLyricRenderMode('particles')">粒子歌词</button>
+        <button type="button" data-lyric-render-mode="plain" onclick="setLyricRenderMode('plain')">普通歌词</button>
+      </div>
       <div class="fx-section-label">歌词颜色</div>
       <div class="lyric-color-grid" id="lyric-color-grid"></div>
       <div class="lyric-color-row">
@@ -4729,7 +4734,8 @@ var fxDefaults = {
   lyricGlowBeat: true,
   lyricGlowParticles: false,
   lyricCameraLock: false,
-  particleLyrics: true,    // v7.2: 粒子歌词
+  particleLyrics: true,    // 舞台歌词总开关
+  lyricRenderMode: 'particles',
   backCover: false,        // 旧的封面背面粒子层关闭；浮空粒子层会跟随封面翻转
   shelf: 'side',
   shelfCameraMode: 'static',
@@ -4816,6 +4822,7 @@ var PACKAGED_DEFAULT_FX_SNAPSHOT = Object.freeze({
   performanceQuality: 'high',
   liveBackgroundKeep: false,
   particleLyrics: true,
+  lyricRenderMode: 'particles',
   backCover: false,
   shelf: 'side',
   shelfCameraMode: 'static',
@@ -9410,6 +9417,8 @@ function readSavedLyricLayout() {
       lyricGlow: raw.lyricGlow !== false,
       lyricGlowBeat: raw.lyricGlowBeat !== false,
       lyricGlowParticles: !!raw.lyricGlowParticles,
+      particleLyrics: raw.particleLyrics !== false,
+      lyricRenderMode: raw.lyricRenderMode === 'plain' ? 'plain' : 'particles',
       cinema: raw.cinema !== false,
       bloom: raw.bloom === true,
       edge: raw.edge === true,
@@ -9500,6 +9509,8 @@ function saveLyricLayout() {
       lyricGlow: !!fx.lyricGlow,
       lyricGlowBeat: !!fx.lyricGlowBeat,
       lyricGlowParticles: !!fx.lyricGlowParticles,
+      particleLyrics: fx.particleLyrics !== false,
+      lyricRenderMode: fx.lyricRenderMode === 'plain' ? 'plain' : 'particles',
       cinema: !!fx.cinema,
       bloom: !!fx.bloom,
       edge: !!fx.edge,
@@ -11111,12 +11122,14 @@ function updateStageLyrics3D(dt) {
       var currentOpacity = data.textMat ? data.textMat.uniforms.uOpacity.value : 0;
       var opacityEase = shelfDetailOpen && currentOpacity > lyricOpacityTarget ? shelfDetailLyricProfile.easeDown : 0.16;
       opacity = clampRange(currentOpacity + (lyricOpacityTarget - currentOpacity) * opacityEase, 0, 1);
-      /* Keep a faint text-shaped readability layer, while the visible glyph
-         is carried by the point cloud assembling character by character. */
-      if (data.textMat) data.textMat.uniforms.uOpacity.value = data.glyphMat ? opacity * 0.12 : opacity;
+      var useGlyphLyrics = fx.lyricRenderMode !== 'plain' && !!data.glyphMat;
+      /* In particle mode the canvas text is only a faint readability backup;
+         in normal mode it returns to the original clear karaoke lyric. */
+      if (data.textMat) data.textMat.uniforms.uOpacity.value = useGlyphLyrics ? opacity * 0.06 : opacity;
       if (data.glyphMat && data.glyphMat.uniforms) {
         var glyphOpacity = data.glyphMat.uniforms.uOpacity.value || 0;
-        glyphOpacity += (opacity - glyphOpacity) * 0.16;
+        var glyphTarget = useGlyphLyrics ? Math.min(1, opacity * 1.18) : 0;
+        glyphOpacity += (glyphTarget - glyphOpacity) * 0.18;
         data.glyphMat.uniforms.uOpacity.value = glyphOpacity;
         data.glyphMat.uniforms.uMorph.value += (a - data.glyphMat.uniforms.uMorph.value) * 0.18;
         if (data.glyphPoints) data.glyphPoints.visible = glyphOpacity > 0.01;
@@ -11202,9 +11215,10 @@ function updateStageLyrics3D(dt) {
       return true;
     }
     opacity = (1 - a) * 0.72 * shelfDetailLyricProfile.outgoing;
-    if (data.textMat) data.textMat.uniforms.uOpacity.value = data.glyphMat ? opacity * 0.10 : opacity;
+    var outgoingGlyphMode = fx.lyricRenderMode !== 'plain' && !!data.glyphMat;
+    if (data.textMat) data.textMat.uniforms.uOpacity.value = outgoingGlyphMode ? opacity * 0.08 : opacity;
     if (data.glyphMat && data.glyphMat.uniforms) {
-      data.glyphMat.uniforms.uOpacity.value = opacity * 0.92;
+      data.glyphMat.uniforms.uOpacity.value = outgoingGlyphMode ? opacity : 0;
       data.glyphMat.uniforms.uMorph.value = 1;
       if (data.glyphPoints) data.glyphPoints.visible = opacity > 0.01;
     }
@@ -21223,6 +21237,19 @@ function renderLyrics() {
   // v8: 歌词渲染由 stageLyrics 在每帧 tickLyricsParticles 里推动
   clearStageLyrics();
 }
+function updateLyricRenderModeControls() {
+  var mode = fx && fx.lyricRenderMode === 'plain' ? 'plain' : 'particles';
+  document.querySelectorAll('#lyric-render-mode-seg [data-lyric-render-mode]').forEach(function(btn){
+    btn.classList.toggle('active', btn.getAttribute('data-lyric-render-mode') === mode);
+  });
+}
+function setLyricRenderMode(mode) {
+  fx.lyricRenderMode = mode === 'plain' ? 'plain' : 'particles';
+  updateLyricRenderModeControls();
+  saveLyricLayout();
+  if (stageLyrics.current && stageLyrics.current.userData) stageLyrics.current.userData.age = Math.max(stageLyrics.current.userData.age || 0, 0.34);
+  showToast(fx.lyricRenderMode === 'plain' ? '歌词模式：普通歌词' : '歌词模式：粒子歌词');
+}
 function toggleLyricsPanel(force) {
   if (force === false) fx.particleLyrics = false;
   else if (force === true) fx.particleLyrics = true;
@@ -22299,6 +22326,7 @@ function normalizeFxArchiveSnapshot(raw) {
     performanceQuality: normalizePerformanceQuality(raw.performanceQuality),
     liveBackgroundKeep: normalizePerformanceBackgroundMode(raw.performanceBackground, raw.liveBackgroundKeep === true) === 'keep',
     particleLyrics: raw.particleLyrics !== false,
+    lyricRenderMode: raw.lyricRenderMode === 'plain' ? 'plain' : 'particles',
     backCover: !!raw.backCover,
     shelf: archiveMode(raw, 'shelf', /^(off|side|stage)$/, fxDefaults.shelf),
     shelfCameraMode: archiveMode(raw, 'shelfCameraMode', /^(dynamic|static)$/, fxDefaults.shelfCameraMode),
@@ -24239,6 +24267,7 @@ function bindFxPanel() {
   buildPresetGrid();
   renderUserFxArchives();
   buildLyricColorControls();
+  updateLyricRenderModeControls();
   var ids = [
     ['fx-intensity','intensity'],['fx-depth','depth'],['fx-coverres','coverResolution'],['fx-cineshake','cinemaShake'],['fx-lyricglow','lyricGlowStrength'],['fx-bgopacity','backgroundOpacity'],['fx-glassaberration','controlGlassChromaticOffset'],
     ['fx-desktoplyricssize','desktopLyricsSize'],['fx-desktoplyricsopacity','desktopLyricsOpacity'],['fx-desktoplyricsy','desktopLyricsY'],['fx-wallpaperopacity','wallpaperOpacity'],
