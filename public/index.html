@@ -8303,15 +8303,17 @@ function destroyFloatLayer() {
 }
 
 // ============================================================
-//  Particle spectrum — a lightweight audio-reactive point field
+//  Particle spectrum — layered audio-reactive particle waves
 // ============================================================
-var PARTICLE_SPECTRUM_BARS = 56;
-var PARTICLE_SPECTRUM_STEPS = 12;
+var PARTICLE_SPECTRUM_BARS = 112;
+var PARTICLE_SPECTRUM_STEPS = 20;
+var PARTICLE_SPECTRUM_LANES = 2;
 var particleSpectrum = null;
 var particleSpectrumPositions = null;
 var particleSpectrumColors = null;
 var particleSpectrumColumns = null;
 var particleSpectrumLevels = null;
+var particleSpectrumLanes = null;
 var particleSpectrumSeeds = null;
 var particleSpectrumSmooth = new Float32Array(PARTICLE_SPECTRUM_BARS);
 var particleSpectrumPaletteKey = '';
@@ -8335,7 +8337,7 @@ function refreshParticleSpectrumColors(force) {
   for (var i = 0; i < particleSpectrumColumns.length; i++) {
     var level = particleSpectrumLevels[i];
     var xRatio = particleSpectrumColumns[i] / Math.max(1, PARTICLE_SPECTRUM_BARS - 1);
-    color.copy(base).lerp(accent, Math.min(0.78, level * 0.62 + xRatio * 0.16));
+    color.copy(base).lerp(accent, Math.min(0.78, Math.abs(level) * 0.62 + xRatio * 0.16));
     particleSpectrumColors[i * 3] = color.r;
     particleSpectrumColors[i * 3 + 1] = color.g;
     particleSpectrumColors[i * 3 + 2] = color.b;
@@ -8348,28 +8350,32 @@ function createParticleSpectrum() {
     refreshParticleSpectrumColors();
     return;
   }
-  var count = PARTICLE_SPECTRUM_BARS * PARTICLE_SPECTRUM_STEPS;
+  var count = PARTICLE_SPECTRUM_BARS * PARTICLE_SPECTRUM_STEPS * PARTICLE_SPECTRUM_LANES;
   var geometry = new THREE.BufferGeometry();
   particleSpectrumPositions = new Float32Array(count * 3);
   particleSpectrumColors = new Float32Array(count * 3);
   particleSpectrumColumns = new Uint16Array(count);
   particleSpectrumLevels = new Float32Array(count);
+  particleSpectrumLanes = new Uint8Array(count);
   particleSpectrumSeeds = new Float32Array(count);
   for (var col = 0; col < PARTICLE_SPECTRUM_BARS; col++) {
-    for (var step = 0; step < PARTICLE_SPECTRUM_STEPS; step++) {
-      var index = col * PARTICLE_SPECTRUM_STEPS + step;
-      particleSpectrumColumns[index] = col;
-      particleSpectrumLevels[index] = (step + 0.45) / PARTICLE_SPECTRUM_STEPS;
-      particleSpectrumSeeds[index] = Math.random();
-      particleSpectrumPositions[index * 3] = (col / (PARTICLE_SPECTRUM_BARS - 1) - 0.5) * 7.45;
-      particleSpectrumPositions[index * 3 + 1] = -8;
-      particleSpectrumPositions[index * 3 + 2] = 0;
+    for (var lane = 0; lane < PARTICLE_SPECTRUM_LANES; lane++) {
+      for (var step = 0; step < PARTICLE_SPECTRUM_STEPS; step++) {
+        var index = (col * PARTICLE_SPECTRUM_LANES + lane) * PARTICLE_SPECTRUM_STEPS + step;
+        particleSpectrumColumns[index] = col;
+        particleSpectrumLanes[index] = lane;
+        particleSpectrumLevels[index] = (step / Math.max(1, PARTICLE_SPECTRUM_STEPS - 1) - 0.5) * 2;
+        particleSpectrumSeeds[index] = Math.random();
+        particleSpectrumPositions[index * 3] = (col / (PARTICLE_SPECTRUM_BARS - 1) - 0.5) * 7.7;
+        particleSpectrumPositions[index * 3 + 1] = -8;
+        particleSpectrumPositions[index * 3 + 2] = 0;
+      }
     }
   }
   geometry.setAttribute('position', new THREE.BufferAttribute(particleSpectrumPositions, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(particleSpectrumColors, 3));
   var spectrumMaterial = new THREE.PointsMaterial({
-    size: 0.052,
+    size: 0.058,
     map: uniforms.uDotTex.value,
     vertexColors: true,
     transparent: true,
@@ -8395,6 +8401,7 @@ function destroyParticleSpectrum() {
   particleSpectrumColors = null;
   particleSpectrumColumns = null;
   particleSpectrumLevels = null;
+  particleSpectrumLanes = null;
   particleSpectrumSeeds = null;
   particleSpectrumSmooth.fill(0);
   particleSpectrumPaletteKey = '';
@@ -8422,21 +8429,29 @@ function updateParticleSpectrum(dt) {
     var column = particleSpectrumColumns[i];
     var level = particleSpectrumLevels[i];
     var amplitude = particleSpectrumSmooth[column];
-    var visible = level <= amplitude;
+    var lane = particleSpectrumLanes[i];
+    var width = 0.10 + amplitude * (lane === 0 ? 0.66 : 0.46);
+    var visible = Math.abs(level) <= width;
     var offset = i * 3;
     if (!visible) {
       particleSpectrumPositions[offset + 1] = -8;
       continue;
     }
     var seed = particleSpectrumSeeds[i];
-    var x = (column / (PARTICLE_SPECTRUM_BARS - 1) - 0.5) * 7.45;
-    particleSpectrumPositions[offset] = x + (seed - 0.5) * 0.045;
-    particleSpectrumPositions[offset + 1] = -1.62 + level * (0.32 + amplitude * 1.62) + Math.sin(uniforms.uTime.value * 2.4 + seed * 17) * 0.025;
-    particleSpectrumPositions[offset + 2] = 0.26 + (seed - 0.5) * 0.12 - level * 0.08;
+    var ratio = column / Math.max(1, PARTICLE_SPECTRUM_BARS - 1);
+    var time = uniforms.uTime.value;
+    var lanePhase = lane ? 1.05 : 0;
+    var carrier = Math.sin(ratio * Math.PI * 4.2 - time * 2.35 + lanePhase);
+    var detail = Math.sin(ratio * Math.PI * 10.6 + time * 1.45 + lanePhase * 1.7);
+    var crest = -1.48 + carrier * (0.10 + amplitude * 0.36) + detail * (0.026 + amplitude * 0.10) + amplitude * (lane ? 0.16 : 0.32);
+    var x = (ratio - 0.5) * 7.7;
+    particleSpectrumPositions[offset] = x + (seed - 0.5) * 0.030;
+    particleSpectrumPositions[offset + 1] = crest + level * (0.045 + amplitude * 0.54) + Math.sin(time * 3.2 + seed * 21) * 0.014;
+    particleSpectrumPositions[offset + 2] = 0.22 + lane * 0.14 + (seed - 0.5) * 0.10 - Math.abs(level) * 0.06;
   }
   particleSpectrum.geometry.attributes.position.needsUpdate = true;
-  particleSpectrum.material.size = 0.045 + smoothBass * 0.030 + beatPulse * 0.012;
-  particleSpectrum.material.opacity = activeAudio ? Math.min(1, 0.68 + smoothEnergy * 0.28) : 0.16;
+  particleSpectrum.material.size = 0.050 + smoothBass * 0.034 + beatPulse * 0.014;
+  particleSpectrum.material.opacity = activeAudio ? Math.min(1, 0.72 + smoothEnergy * 0.24) : 0.18;
   refreshParticleSpectrumColors();
 }
 
