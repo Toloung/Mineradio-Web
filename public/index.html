@@ -2104,6 +2104,67 @@ body.has-mobile-nav.simple-mode #fx-panel { display: block !important; }
 #fx-panel .fx-reset-one{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;flex:0 0 24px;padding:0!important}
 #fx-panel .fx-reset-one svg,#fx-panel .fx-mini-btn svg,#fx-panel .preset-card svg{flex:0 0 auto;max-width:100%;max-height:100%}
 #fx-panel .fx-toggle .dot{flex:0 0 8px}
+
+/* Settings control system: keep every action readable and tappable instead of
+   squeezing labels and icons into one inherited button style. */
+#fx-panel{--fx-control-h:38px;--fx-control-radius:10px;--fx-control-border:rgba(255,255,255,.085);--fx-control-bg:rgba(255,255,255,.035)}
+#fx-panel button{box-sizing:border-box;font-family:inherit}
+#fx-panel .fx-mini-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:var(--fx-control-h)!important;min-height:var(--fx-control-h)!important;
+  min-width:62px!important;padding:0 11px;border-radius:var(--fx-control-radius);
+  border:1px solid var(--fx-control-border)!important;background:var(--fx-control-bg)!important;
+  color:rgba(255,255,255,.82);font-size:11px;font-weight:700;line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:background .18s,border-color .18s,color .18s,transform .18s,box-shadow .18s;
+}
+#fx-panel .fx-mini-btn:hover{transform:translateY(-1px);border-color:rgba(var(--fc-accent-rgb),.34)!important;background:rgba(var(--fc-accent-rgb),.10)!important;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+#fx-panel .fx-mini-btn:active{transform:translateY(0) scale(.98)}
+#fx-panel button:focus-visible,#fx-panel .fx-toggle:focus-visible{outline:2px solid rgba(var(--fc-accent-rgb),.82);outline-offset:2px}
+#fx-panel .fx-toggle-grid{gap:8px}
+#fx-panel .fx-toggle{
+  min-height:48px;padding:8px 10px;border-radius:var(--fx-control-radius);
+  border:1px solid var(--fx-control-border)!important;background:var(--fx-control-bg)!important;
+  gap:10px;box-sizing:border-box;line-height:1.25;
+}
+#fx-panel .fx-toggle span:first-child{padding-right:0;white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#fx-panel .fx-toggle .dot{width:9px;height:9px;flex:0 0 9px;margin-right:1px}
+#fx-panel .fx-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);min-height:42px;margin:8px 0 12px;border-radius:var(--fx-control-radius);overflow:hidden}
+#fx-panel .fx-seg button{
+  display:flex;align-items:center;justify-content:center;min-height:42px!important;padding:7px 8px;
+  white-space:normal;overflow:hidden;text-overflow:clip;line-height:1.2;font-size:11px;font-weight:700;
+}
+#fx-panel .fx-font-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#fx-panel .fx-font-grid.expanded{grid-template-columns:repeat(3,minmax(0,1fr))}
+#fx-panel .fx-font-grid button,#fx-panel .user-archive-actions button{
+  min-height:var(--fx-control-h)!important;border-radius:var(--fx-control-radius);font-size:10.5px;font-weight:700;
+  padding:0 7px;line-height:1.1;white-space:normal;overflow:hidden;text-overflow:clip;
+}
+#fx-panel .lyric-color-row{
+  grid-template-columns:42px minmax(0,1fr) auto;min-height:54px;gap:9px;padding:8px 9px;
+  border-radius:var(--fx-control-radius);border-color:var(--fx-control-border)!important;background:var(--fx-control-bg)!important;
+}
+#fx-panel .lyric-color-row.visual-tint-row{
+  grid-template-columns:42px minmax(0,1fr) 62px;
+  grid-template-areas:"picker label cover" "picker label reset";
+}
+#fx-panel .visual-tint-row #visual-tint-picker{grid-area:picker;align-self:center}
+#fx-panel .visual-tint-row .fx-color-row-label{grid-area:label;align-self:center}
+#fx-panel .visual-tint-row #visual-tint-auto-btn{grid-area:cover}
+#fx-panel .visual-tint-row .fx-mini-btn:last-child{grid-area:reset}
+#fx-panel .lyric-color-row.image-pick-row{grid-template-columns:auto minmax(0,1fr) auto}
+#fx-panel .lyric-color-picker{width:42px;height:36px;border-radius:10px;align-self:center}
+#fx-panel .fx-color-row-label,#fx-panel .lyric-color-value{line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fx-panel .fx-color-row-label small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fx-panel .fx-slider{
+  grid-template-columns:minmax(84px,104px) minmax(0,1fr) 48px 30px;min-height:52px;gap:9px;padding:8px 10px;
+  border-radius:var(--fx-control-radius);border-color:var(--fx-control-border)!important;background:var(--fx-control-bg)!important;
+}
+#fx-panel .fx-slider label{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25;font-size:11px}
+#fx-panel .fx-slider output{min-width:0;font-size:10px;overflow:visible;text-overflow:clip}
+#fx-panel .fx-reset-one{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;flex-basis:28px;border-radius:9px}
+#fx-panel .user-archive-tools{flex-wrap:wrap;justify-content:flex-end}
+#fx-panel .user-archive-tools .fx-mini-btn{min-width:58px}
 @media (max-width:380px){
   #fx-panel{padding-left:9px!important;padding-right:9px!important}
   #fx-panel .lyric-color-row.visual-tint-row{grid-template-columns:38px minmax(0,1fr) 48px 48px;gap:6px;padding:7px}
@@ -2111,6 +2172,20 @@ body.has-mobile-nav.simple-mode #fx-panel { display: block !important; }
   #fx-panel .lyric-color-row.image-pick-row{grid-template-columns:56px minmax(0,1fr) 56px}
   #fx-panel .lyric-color-picker{width:38px}
   #fx-panel .fx-slider{grid-template-columns:68px minmax(0,1fr) 38px 24px;gap:6px;padding:8px}
+}
+@media (max-width:520px){
+  #fx-panel .preset-grid,#fx-panel .fx-toggle-grid{grid-template-columns:1fr}
+  #fx-panel .fx-font-grid,#fx-panel .fx-font-grid.expanded{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #fx-panel .lyric-color-row.visual-tint-row{grid-template-columns:42px minmax(0,1fr) 62px;grid-template-areas:"picker label cover" "picker label reset";gap:8px;padding:8px}
+  #fx-panel .fx-slider{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"label value" "range reset";gap:7px 10px;min-height:66px;padding:9px 10px}
+  #fx-panel .fx-slider label{grid-area:label}
+  #fx-panel .fx-slider input[type=range]{grid-area:range}
+  #fx-panel .fx-slider output{grid-area:value;align-self:center;min-width:42px;text-align:right}
+  #fx-panel .fx-slider .fx-reset-one{grid-area:reset;justify-self:end}
+  #fx-panel .user-archive-grid{grid-template-columns:1fr}
+  #fx-panel .user-archive-toolbar{align-items:flex-start;flex-direction:column}
+  #fx-panel .user-archive-tools{width:100%;justify-content:stretch}
+  #fx-panel .user-archive-tools .fx-mini-btn{flex:1}
 }
 
 /* ---- Toast notifications ---- */
