@@ -1307,12 +1307,17 @@ body.desktop-shell.diy-mode #bottom-bar.stage-mode{left:50%;width:min(1080px,cal
 .qi-sub{font-size:10.5px;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .queue-artist-link{max-width:100%;border:0;background:transparent;color:rgba(var(--fc-accent-rgb),.64);font:inherit;padding:0;margin:0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .queue-artist-link:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
-.qi-act{display:flex;gap:4px;opacity:0;transition:opacity .15s}
-.queue-item:hover .qi-act{opacity:1}
+.qi-act{display:flex;gap:4px;position:absolute;top:50%;right:8px;transform:translateY(-50%);opacity:0;pointer-events:none;transition:opacity .15s}
+.queue-item:hover .qi-act{opacity:1;pointer-events:auto}
 .qi-act button{width:24px;height:24px;border:none;border-radius:5px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.55);cursor:pointer;font-size:13px;line-height:1}
 .qi-act button:hover{background:rgba(255,255,255,.15);color:#fff}
 .qi-act button.queue-next:hover{background:rgba(0,245,212,.14);color:#eafffb}
 .qi-act button.liked,.song-action-btn.liked{color:#ff7a90;background:rgba(255,122,144,.10)}
+/* Queue actions are a desktop hover affordance. Touch browsers keep :hover
+   after tapping a row, so the four controls used to become a permanent wide
+   block and push the song information out of alignment. */
+.queue-item{position:relative}
+@media (hover:none),(pointer:coarse){.queue-item .qi-act{display:none!important}}
 .song-action-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.045);color:rgba(255,255,255,.58);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;font-size:14px;line-height:1}
 .song-action-btn:hover{background:rgba(0,245,212,.10);border-color:rgba(0,245,212,.32);color:#eafffb;transform:translateY(-1px)}
 .queue-chip{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);font-size:10.5px;color:rgba(255,255,255,.65)}
