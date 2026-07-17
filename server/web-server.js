@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Mineradio Mobile Server
+ * Mineradio Web Server
  * - Serves PWA static files
  * - Proxies /api/* to the original server.js
  * - Adds mobile-friendly login endpoints (phone login, cookie management)
@@ -33,7 +33,7 @@ const originalServer = spawn('node', [path.join(__dirname, 'server.js')], {
 
 console.log('');
 console.log('╔══════════════════════════════════════════════════╗');
-console.log('║        🎵 Mineradio Mobile Server 🎵            ║');
+console.log('║         🎵 Mineradio Web Server 🎵              ║');
 console.log('╠══════════════════════════════════════════════════╣');
 console.log('║  API Proxy  : http://127.0.0.1:' + (PORT + 1) + '              ║');
 console.log('║  PWA + Login: http://' + HOST + ':' + PORT + '          ║');
