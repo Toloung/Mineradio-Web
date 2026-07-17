@@ -1,0 +1,337 @@
+/*
+ * Mobile player shell
+ *
+ * The desktop player deliberately has its own layout.  Phones use this
+ * isolated layer instead of inheriting the old home-card and glass controls:
+ * one visual stage, one compact player, and modal sheets for secondary work.
+ */
+@media (max-width: 767px), (max-height: 520px) and (pointer: coarse) {
+  :root {
+    --mobile-surface: rgba(16, 17, 23, .94);
+    --mobile-row: rgba(255, 255, 255, .055);
+    --mobile-line: rgba(255, 255, 255, .085);
+    --mobile-safe-bottom: calc(64px + var(--safe-area-bottom));
+  }
+
+  body.has-mobile-nav {
+    background: #0d0e12 !important;
+  }
+
+  /* The visual/lyrics stage is the mobile landing screen. */
+  body.has-mobile-nav #empty-home,
+  body.has-mobile-nav #bottom-handle,
+  body.has-mobile-nav #player-controls-strip {
+    display: none !important;
+  }
+
+  body.has-mobile-nav #search-area {
+    top: calc(var(--safe-area-top) + 12px) !important;
+    width: calc(100vw - 28px) !important;
+    max-width: none !important;
+    z-index: 810 !important;
+  }
+
+  body.has-mobile-nav #search-box {
+    height: 46px !important;
+    padding: 0 15px !important;
+    border: 1px solid var(--mobile-line) !important;
+    border-radius: 14px !important;
+    background: rgba(15, 16, 21, .78) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .20) !important;
+    backdrop-filter: blur(20px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(118%) !important;
+  }
+
+  body.has-mobile-nav #search-box:focus-within {
+    border-color: rgba(var(--fc-accent-rgb), .42) !important;
+    background: rgba(21, 22, 28, .94) !important;
+    box-shadow: 0 0 0 3px rgba(var(--fc-accent-rgb), .10), 0 12px 30px rgba(0, 0, 0, .28) !important;
+  }
+
+  body.has-mobile-nav #search-mode-tabs,
+  body.has-mobile-nav #upload-actions {
+    display: none !important;
+  }
+
+  body.has-mobile-nav #search-results {
+    position: fixed !important;
+    z-index: 820 !important;
+    top: calc(var(--safe-area-top) + 68px) !important;
+    right: 14px !important;
+    bottom: var(--mobile-safe-bottom) !important;
+    left: 14px !important;
+    width: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 6px !important;
+    border: 1px solid var(--mobile-line) !important;
+    border-radius: 16px !important;
+    background: var(--mobile-surface) !important;
+    box-shadow: 0 22px 56px rgba(0, 0, 0, .44) !important;
+    backdrop-filter: blur(24px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(118%) !important;
+  }
+
+  body.has-mobile-nav #search-results .search-result {
+    min-height: 64px !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    border-radius: 11px !important;
+    background: transparent !important;
+  }
+
+  body.has-mobile-nav #search-results .search-result + .search-result {
+    margin-top: 2px !important;
+  }
+
+  body.has-mobile-nav #search-results .search-result:active {
+    background: var(--mobile-row) !important;
+  }
+
+  /* A persistent mini player is more discoverable than the old hidden dock. */
+  body.has-mobile-nav #bottom-bar,
+  body.has-mobile-nav #bottom-bar.stage-mode {
+    position: fixed !important;
+    z-index: 805 !important;
+    bottom: calc(66px + var(--safe-area-bottom)) !important;
+    left: 12px !important;
+    width: calc(100vw - 24px) !important;
+    min-height: 62px !important;
+    margin: 0 !important;
+    padding: 5px 10px 7px !important;
+    border: 1px solid var(--mobile-line) !important;
+    border-radius: 15px !important;
+    background: var(--mobile-surface) !important;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, .34) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    backdrop-filter: blur(24px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
+  }
+
+  body.has-mobile-nav #bottom-bar.soft-hidden,
+  body.has-mobile-nav.home-controls-locked #bottom-bar {
+    opacity: .72 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+  }
+
+  body.has-mobile-nav #progress-bar {
+    width: 100% !important;
+    height: 2px !important;
+    margin: 0 0 5px !important;
+    background: rgba(255, 255, 255, .12) !important;
+  }
+
+  body.has-mobile-nav #progress-fill {
+    background: var(--fc-accent) !important;
+    box-shadow: none !important;
+  }
+
+  body.has-mobile-nav #progress-thumb {
+    display: none !important;
+  }
+
+  body.has-mobile-nav #controls {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    height: 48px !important;
+  }
+
+  body.has-mobile-nav #controls .control-cluster {
+    min-width: 0 !important;
+    height: 48px !important;
+  }
+
+  body.has-mobile-nav #controls .control-cluster.actions {
+    display: block !important;
+    grid-column: 1 !important;
+    order: 0 !important;
+  }
+
+  body.has-mobile-nav #controls .control-track {
+    display: flex !important;
+    min-width: 0 !important;
+    height: 48px !important;
+    gap: 10px !important;
+  }
+
+  body.has-mobile-nav #control-cover {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+    border-radius: 9px !important;
+  }
+
+  body.has-mobile-nav .control-meta {
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  body.has-mobile-nav .control-title,
+  body.has-mobile-nav .control-artist {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body.has-mobile-nav .control-title {
+    color: rgba(255, 255, 255, .92) !important;
+    font-size: 13px !important;
+  }
+
+  body.has-mobile-nav .control-artist {
+    margin-top: 3px !important;
+    color: rgba(255, 255, 255, .48) !important;
+    font-size: 11px !important;
+  }
+
+  body.has-mobile-nav #quality-control,
+  body.has-mobile-nav #heart-btn,
+  body.has-mobile-nav #collect-btn,
+  body.has-mobile-nav .control-cluster.modes,
+  body.has-mobile-nav #play-mode-btn,
+  body.has-mobile-nav #mini-queue-btn {
+    display: none !important;
+  }
+
+  body.has-mobile-nav #controls .control-cluster.transport {
+    display: flex !important;
+    grid-column: 2 !important;
+    order: 0 !important;
+    gap: 2px !important;
+  }
+
+  body.has-mobile-nav #prev-btn,
+  body.has-mobile-nav #next-btn {
+    width: 36px !important;
+    height: 40px !important;
+  }
+
+  body.has-mobile-nav #play-btn {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+    background: var(--fc-accent) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body.has-mobile-nav #play-btn:active {
+    transform: scale(.94) !important;
+  }
+
+  /* Sheets share one motion, one width and never overlap the player. */
+  body.has-mobile-nav #playlist-panel,
+  body.has-mobile-nav #fx-panel {
+    position: fixed !important;
+    z-index: 900 !important;
+    top: calc(var(--safe-area-top) + 8px) !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 16px 14px calc(16px + var(--safe-area-bottom)) !important;
+    overflow: auto !important;
+    border: 1px solid var(--mobile-line) !important;
+    border-radius: 18px !important;
+    background: #17181f !important;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, .54) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 24px, 0) !important;
+    transition: transform .28s cubic-bezier(.2, .8, .2, 1), opacity .2s ease, visibility .2s ease !important;
+  }
+
+  body.has-mobile-nav #playlist-panel.show,
+  body.has-mobile-nav #playlist-panel.peek,
+  body.has-mobile-nav #fx-panel.show,
+  body.has-mobile-nav #fx-panel.peek {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  body.has-mobile-nav #playlist-panel .queue-head,
+  body.has-mobile-nav #fx-panel .fx-head {
+    position: sticky !important;
+    top: -16px !important;
+    z-index: 3 !important;
+    padding-top: 4px !important;
+    background: #17181f !important;
+  }
+
+  body.has-mobile-nav #fx-panel .fx-panel-tabs {
+    top: 0 !important;
+  }
+
+  body.has-mobile-nav #mini-queue-popover {
+    z-index: 910 !important;
+    right: 12px !important;
+    bottom: calc(136px + var(--safe-area-bottom)) !important;
+    left: 12px !important;
+    width: auto !important;
+    max-height: min(58dvh, 480px) !important;
+    border-radius: 16px !important;
+  }
+
+  /* Bottom navigation is intentionally calm and always within thumb reach. */
+  body.has-mobile-nav #mobile-nav {
+    z-index: 850 !important;
+    width: 100vw !important;
+    height: calc(62px + var(--safe-area-bottom)) !important;
+    padding: 4px 8px calc(5px + var(--safe-area-bottom)) !important;
+    border: 0 !important;
+    border-top: 1px solid var(--mobile-line) !important;
+    border-radius: 0 !important;
+    background: rgba(13, 14, 18, .94) !important;
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, .12) !important;
+    backdrop-filter: blur(22px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(120%) !important;
+  }
+
+  body.has-mobile-nav .mobile-nav-btn {
+    min-width: 0 !important;
+    min-height: 48px !important;
+    gap: 3px !important;
+    color: rgba(255, 255, 255, .44) !important;
+    font-size: 10px !important;
+  }
+
+  body.has-mobile-nav .mobile-nav-btn.active {
+    color: var(--fc-accent) !important;
+  }
+
+  body.has-mobile-nav .mobile-nav-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  body.has-mobile-nav #mobile-nav-trigger {
+    z-index: 849 !important;
+  }
+
+  body.has-mobile-nav .modal-mask {
+    z-index: 1000 !important;
+  }
+
+  body.has-mobile-nav .modal {
+    width: calc(100vw - 28px) !important;
+    max-height: calc(100dvh - 40px) !important;
+    padding: 20px !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  body.has-mobile-nav #prev-btn,
+  body.has-mobile-nav #next-btn {
+    display: none !important;
+  }
+}

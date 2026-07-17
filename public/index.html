@@ -2848,12 +2848,13 @@ body.has-mobile-nav #player-controls-strip {
 </style>
 <link rel="stylesheet" href="home-player.css?v=20260716-0445">
 <link rel="stylesheet" href="ui-system.css?v=20260716-0445">
+<link rel="stylesheet" href="mobile-player.css?v=20260717-1705">
 </head>
 <body>
 <script>
 /* The stage-first shell is desktop-only. Mobile keeps the app's original
    navigation, panels and player controls. */
-if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-width: 768px)').matches) {
+if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) && !/Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent || '') && window.matchMedia('(min-width: 768px)').matches) {
   document.body.classList.add('web-player-layout', 'web-player-stage-only', 'web-stage-boot');
 }
 </script>
@@ -3914,9 +3915,9 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
     nav.id = 'mobile-nav';
     nav.className = 'hidden'; // Start hidden
     nav.innerHTML =
-      '<button class="mobile-nav-btn active" data-tab="home">' +
+      '<button class="mobile-nav-btn active" data-tab="now-playing">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
-        '<span>首页</span>' +
+        '<span>播放</span>' +
       '</button>' +
       '<button class="mobile-nav-btn" data-tab="search">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
@@ -3929,6 +3930,10 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
       '<button class="mobile-nav-btn" data-tab="settings">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>' +
         '<span>设置</span>' +
+      '</button>' +
+      '<button class="mobile-nav-btn" data-tab="account">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 3.45-6 8-6s7.2 2 8 6"/></svg>' +
+        '<span>账户</span>' +
       '</button>';
 
     document.body.appendChild(nav);
@@ -3947,6 +3952,18 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
     function hideNav() {
       nav.classList.add('hidden');
       clearTimeout(navHideTimer);
+    }
+
+    function closeMobilePanels(keep) {
+      if (keep !== 'playlist' && typeof togglePlaylistPanel === 'function') togglePlaylistPanel(false);
+      if (keep !== 'settings' && typeof toggleFxPanel === 'function') toggleFxPanel(false);
+      if (keep !== 'queue' && typeof closeMiniQueue === 'function') closeMiniQueue();
+      if (keep !== 'search') {
+        var searchArea = document.getElementById('search-area');
+        var searchInput = searchArea && searchArea.querySelector('input');
+        if (searchInput && document.activeElement === searchInput) searchInput.blur();
+        if (searchArea) searchArea.classList.remove('peek');
+      }
     }
 
     // Tap bottom area to toggle nav
@@ -3978,10 +3995,13 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
         btn.classList.add('active');
         var tab = btn.dataset.tab;
         switch(tab) {
-          case 'home':
-            if (typeof navigateHome === 'function') navigateHome();
+          case 'now-playing':
+            closeMobilePanels('stage');
+            var bottomBar = document.getElementById('bottom-bar');
+            if (bottomBar) bottomBar.classList.add('visible');
             break;
           case 'search':
+            closeMobilePanels('search');
             var searchArea = document.getElementById('search-area');
             if (searchArea) {
               searchArea.classList.add('peek');
@@ -3991,11 +4011,22 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
             showNav();
             break;
           case 'playlist':
+            closeMobilePanels('playlist');
             if (typeof togglePlaylistPanel === 'function') togglePlaylistPanel();
             showNav();
             break;
           case 'settings':
+            closeMobilePanels('settings');
             if (typeof toggleFxPanel === 'function') toggleFxPanel();
+            showNav();
+            break;
+          case 'account':
+            closeMobilePanels('account');
+            if (typeof hasAnyPlatformLogin === 'function' && hasAnyPlatformLogin()) {
+              if (typeof openUserModal === 'function') openUserModal();
+            } else if (typeof openLoginModal === 'function') {
+              openLoginModal();
+            }
             showNav();
             break;
         }
@@ -29469,6 +29500,6 @@ function animate() {
 }
 animate();
 </script>
-<script src="home-player.js?v=20260716-0445"></script>
+<script src="home-player.js?v=20260717-1712"></script>
 </body>
 </html>

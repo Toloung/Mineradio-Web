@@ -2,7 +2,9 @@
 (function () {
   'use strict';
   if (document.body.classList.contains('desktop-shell')) return;
-  if (!window.matchMedia('(min-width: 768px)').matches) {
+  var isMobileRuntime = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+    /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent || '');
+  if (isMobileRuntime || !window.matchMedia('(min-width: 768px)').matches) {
     document.body.classList.remove(
       'web-player-layout', 'web-player-stage-only', 'web-stage-boot',
       'web-player-controls-hidden', 'home-controls-locked'
