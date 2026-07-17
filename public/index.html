@@ -3073,6 +3073,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
     </div>
     <div class="fx-fold-body">
       <div class="fx-toggle-grid">
+        <div class="fx-toggle" id="t-coverParticles" onclick="toggleFx('coverParticles')"><span>显示背景粒子</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-float" onclick="toggleFx('floatLayer')"><span>浮空粒子层</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-cinema" onclick="toggleFx('cinema')"><span>电影镜头</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-lyricGlow" onclick="toggleFx('lyricGlow')"><span>歌词溢光</span><span class="dot"></span></div>
@@ -4730,6 +4731,7 @@ var fxDefaults = {
   desktopLyricsFps: 60,
   wallpaperMode: false,
   wallpaperOpacity: 1,
+  coverParticles: true,
   floatLayer: false, cinema: true, edge: false, aiDepth: false, bloom: false, lyricGlow: true,
   lyricGlowBeat: true,
   lyricGlowParticles: false,
@@ -4802,6 +4804,7 @@ var PACKAGED_DEFAULT_FX_SNAPSHOT = Object.freeze({
   backgroundOpacity: 1,
   controlGlassChromaticOffset: 90,
   backgroundColorCustom: false,
+  coverParticles: true,
   floatLayer: false,
   cinema: true,
   edge: false,
@@ -9417,6 +9420,7 @@ function readSavedLyricLayout() {
       lyricGlow: raw.lyricGlow !== false,
       lyricGlowBeat: raw.lyricGlowBeat !== false,
       lyricGlowParticles: !!raw.lyricGlowParticles,
+      coverParticles: raw.coverParticles !== false,
       particleLyrics: raw.particleLyrics !== false,
       lyricRenderMode: raw.lyricRenderMode === 'plain' ? 'plain' : 'particles',
       cinema: raw.cinema !== false,
@@ -9509,6 +9513,7 @@ function saveLyricLayout() {
       lyricGlow: !!fx.lyricGlow,
       lyricGlowBeat: !!fx.lyricGlowBeat,
       lyricGlowParticles: !!fx.lyricGlowParticles,
+      coverParticles: fx.coverParticles !== false,
       particleLyrics: fx.particleLyrics !== false,
       lyricRenderMode: fx.lyricRenderMode === 'plain' ? 'plain' : 'particles',
       cinema: !!fx.cinema,
@@ -22372,6 +22377,7 @@ function normalizeFxArchiveSnapshot(raw) {
     controlGlassChromaticOffset: archiveNumber(raw, 'controlGlassChromaticOffset', fxDefaults.controlGlassChromaticOffset, 0, 140),
     backgroundColorCustom: raw.backgroundColorMode === 'custom' || !!raw.backgroundColorCustom,
     floatLayer: !!raw.floatLayer,
+    coverParticles: raw.coverParticles !== false,
     cinema: raw.cinema !== false,
     edge: !!raw.edge,
     aiDepth: !!raw.aiDepth,
@@ -23489,7 +23495,7 @@ function syncFxUniforms() {
   uniforms.uCoverRes.value = normalizeCoverResolution(fx.coverResolution);
   uniforms.uBgFade.value = fx.bgFade;
   uniforms.uBloomStrength.value = fx.bloom ? fx.bloomStrength : 0;
-  if (bloomParticles) bloomParticles.visible = fx.bloom && fx.bloomStrength > 0.01;
+  if (bloomParticles) bloomParticles.visible = fx.coverParticles !== false && fx.bloom && fx.bloomStrength > 0.01;
   uniforms.uEdgeEnabled.value = fx.edge ? 1 : 0;
   if (uniforms.uTintColor) uniforms.uTintColor.value.set(normalizeHexColor(fx.visualTintColor || '#9db8cf'));
   /* A chosen particle colour should read as a deliberate visual decision.
@@ -23666,6 +23672,8 @@ function updateFxInputs() {
   document.getElementById('t-float').classList.toggle('on', fx.floatLayer);
   var floatToggle = document.getElementById('t-float');
   if (floatToggle) floatToggle.classList.toggle('on', fx.floatLayer);
+  var coverParticlesToggle = document.getElementById('t-coverParticles');
+  if (coverParticlesToggle) coverParticlesToggle.classList.toggle('on', fx.coverParticles !== false);
   document.getElementById('t-cinema').classList.toggle('on', fx.cinema);
   var lyricGlowToggle = document.getElementById('t-lyricGlow');
   if (lyricGlowToggle) lyricGlowToggle.classList.toggle('on', fx.lyricGlow);
@@ -24560,7 +24568,8 @@ function toggleFx(key) {
   var toggle = document.getElementById(toggleId);
   if (toggle) toggle.classList.toggle('on', fx[key]);
   syncFxUniforms();
-  if (key === 'lyricCameraLock' || key === 'lyricGlow' || key === 'lyricGlowBeat' || key === 'lyricGlowParticles' || key === 'bloom' || key === 'edge' || key === 'cinema' || key === 'desktopLyrics' || key === 'desktopLyricsClickThrough' || key === 'desktopLyricsCinema' || key === 'desktopLyricsHighlight' || key === 'wallpaperMode' || key === 'shelfShowPodcasts' || key === 'shelfMergeCollections' || key === 'liveBackgroundKeep') saveLyricLayout();
+  if (key === 'coverParticles' || key === 'lyricCameraLock' || key === 'lyricGlow' || key === 'lyricGlowBeat' || key === 'lyricGlowParticles' || key === 'bloom' || key === 'edge' || key === 'cinema' || key === 'desktopLyrics' || key === 'desktopLyricsClickThrough' || key === 'desktopLyricsCinema' || key === 'desktopLyricsHighlight' || key === 'wallpaperMode' || key === 'shelfShowPodcasts' || key === 'shelfMergeCollections' || key === 'liveBackgroundKeep') saveLyricLayout();
+  if (key === 'coverParticles') showToast(fx.coverParticles !== false ? '背景粒子已显示' : '背景粒子已隐藏');
   if (key === 'floatLayer') { if (fx.floatLayer) createFloatLayer(); else destroyFloatLayer(); }
   if (key === 'desktopLyrics') applyDesktopLyricsState(true);
   if (key === 'desktopLyricsClickThrough' || key === 'desktopLyricsCinema' || key === 'desktopLyricsHighlight') pushDesktopLyricsState(true);
@@ -29107,10 +29116,11 @@ function animate() {
   // v7.2 旋转 = 头部+眼球追踪 + 鼠标/手势拖动 + 惯性
   tickGestureRotation(dt);
   var skullPresetActive = fx && fx.preset === SKULL_PRESET_INDEX;
-  particles.visible = !skullPresetActive;
-  if (bloomParticles) bloomParticles.visible = !skullPresetActive && fx.bloom && fx.bloomStrength > 0.01;
-  if (floatGroup) floatGroup.visible = !skullPresetActive;
-  if (backCoverGroup) backCoverGroup.visible = !skullPresetActive;
+  var backgroundParticlesVisible = !skullPresetActive && (!fx || fx.coverParticles !== false);
+  particles.visible = backgroundParticlesVisible;
+  if (bloomParticles) bloomParticles.visible = backgroundParticlesVisible && fx.bloom && fx.bloomStrength > 0.01;
+  if (floatGroup) floatGroup.visible = backgroundParticlesVisible && !!fx.floatLayer;
+  if (backCoverGroup) backCoverGroup.visible = backgroundParticlesVisible && !!fx.backCover;
   var targetRotY = orbit.centerLocked ? 0 : (headParallax.active ? headParallax.x * 0.5 : 0) + gestureRotation.y;
   var targetRotX = orbit.centerLocked ? 0 : (headParallax.active ? -headParallax.y * 0.35 : 0) + gestureRotation.x;
   particles.rotation.y += (targetRotY - particles.rotation.y) * 0.055;
