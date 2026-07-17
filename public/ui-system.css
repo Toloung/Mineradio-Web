@@ -98,9 +98,13 @@ body.web-player-layout .pl-detail-play:hover { background: var(--ui-accent-hover
 body.web-player-layout #fx-panel {
   top: 84px !important;
   right: -440px !important;
-  bottom: 106px !important;
+  /* A settings page can be much longer than a queue.  With an auto height,
+     fixed positioning lets the content push through the player bar.  Keep it
+     the same physical drawer height as the playlist and scroll inside. */
+  bottom: auto !important;
+  height: min(493px,calc(100dvh - 190px)) !important;
   width: 400px !important;
-  max-height: none !important;
+  max-height: min(493px,calc(100dvh - 190px)) !important;
   padding: 18px !important;
   border-color: var(--ui-line) !important;
   border-radius: var(--ui-radius-lg) !important;
