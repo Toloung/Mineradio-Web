@@ -4046,9 +4046,9 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
           case 'account':
             closeMobilePanels('account');
             if (typeof hasAnyPlatformLogin === 'function' && hasAnyPlatformLogin()) {
-              if (typeof openUserModal === 'function') openUserModal();
-            } else if (typeof openLoginModal === 'function') {
-              openLoginModal();
+              if (typeof showUserModal === 'function') showUserModal();
+            } else if (typeof showLoginModal === 'function') {
+              showLoginModal();
             }
             showNav();
             break;

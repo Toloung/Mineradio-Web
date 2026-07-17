@@ -11,6 +11,7 @@
     --mobile-row: rgba(255, 255, 255, .055);
     --mobile-line: rgba(255, 255, 255, .085);
     --mobile-safe-bottom: calc(64px + var(--safe-area-bottom));
+    --mobile-search-bottom: calc(140px + var(--safe-area-bottom));
   }
 
   body.has-mobile-nav {
@@ -58,7 +59,7 @@
     z-index: 820 !important;
     top: calc(var(--safe-area-top) + 68px) !important;
     right: 14px !important;
-    bottom: var(--mobile-safe-bottom) !important;
+    bottom: var(--mobile-search-bottom) !important;
     left: 14px !important;
     width: auto !important;
     max-height: none !important;
