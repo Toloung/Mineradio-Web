@@ -1885,7 +1885,7 @@ body.has-mobile-nav canvas{touch-action:none}
   .lyric-color-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
-/* ===== MINERADIO MOBILE ADAPTATION ===== */
+/* ===== MINERADIO WEB · MOBILE ADAPTATION ===== */
 :root {
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -3737,7 +3737,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
 <script>
 'use strict';
 
-// ===== MINERADIO MOBILE INIT =====
+// ===== MINERADIO WEB · MOBILE INIT =====
 (function() {
   'use strict';
 
@@ -3747,7 +3747,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
   var isMobile = isCapacitor || isMobileBrowser;
 
   // -- Server configuration (saved to localStorage) --
-  var STORAGE_KEY_SERVER = 'mineradio-mobile-server-url';
+  var STORAGE_KEY_SERVER = 'mineradio-web-server-url';
   var DEFAULT_MOBILE_SERVER_URL = 'http://180.76.145.83:8088';
 
   window.getMobileServerUrl = function() {
@@ -3849,7 +3849,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
   }
 
   // -- Capacitor bridge --
-  window.MineradioMobile = {
+  window.MineradioWeb = {
     isMobile: isMobile,
     isCapacitor: isCapacitor,
     platform: isCapacitor ? window.Capacitor.getPlatform() : (isMobileBrowser ? 'browser' : 'desktop'),
@@ -3876,7 +3876,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
 
     var savedUrl = window.getMobileServerUrl();
     var html = '<div id="mobile-connect">' +
-      '<h2>🎵 Mineradio Mobile</h2>' +
+      '<h2>🎵 Mineradio Web</h2>' +
       '<p>请输入服务器地址以连接音源服务<br>（在你的电脑上运行 <code>node server.js</code> 并输入 IP:端口）</p>' +
       '<input type="text" id="mobile-server-input" placeholder="例如: http://192.168.1.100:3000" value="' + (savedUrl || '') + '">' +
       '<button id="mobile-connect-btn">连接</button>' +
@@ -3887,7 +3887,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
 
     document.getElementById('mobile-connect-btn').addEventListener('click', function() {
       var url = document.getElementById('mobile-server-input').value.trim();
-      if (url) window.MineradioMobile.reconnect(url);
+      if (url) window.MineradioWeb.reconnect(url);
     });
 
     document.getElementById('mobile-skip-btn').addEventListener('click', function() {
@@ -3898,7 +3898,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
     document.getElementById('mobile-server-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         var url = this.value.trim();
-        if (url) window.MineradioMobile.reconnect(url);
+        if (url) window.MineradioWeb.reconnect(url);
       }
     });
   }
@@ -4122,7 +4122,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
       if (typeof dismissSplash === 'function') {
         dismissSplash();
         clearInterval(splashAutoDismissTimer);
-        console.log('[Mineradio Mobile] Splash auto-dismissed');
+        console.log('[Mineradio Web] Splash auto-dismissed');
         return;
       }
       // Fallback: manually remove splash if the function isn't available yet
@@ -4132,7 +4132,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
         splash.classList.add('hide');
         splash.style.display = 'none';
         clearInterval(splashAutoDismissTimer);
-        console.log('[Mineradio Mobile] Splash forcefully removed');
+        console.log('[Mineradio Web] Splash forcefully removed');
         return;
       }
       // Give up after 10 seconds
@@ -4340,8 +4340,8 @@ if (!/Electron/i.test(navigator.userAgent || '') && !(window.Capacitor && window
     }, 500);
   }
 
-  console.log('[Mineradio Mobile] Initialized. Platform:', window.MineradioMobile.platform);
-  console.log('[Mineradio Mobile] Server:', window.MOBILE_API_ORIGIN || '(not configured - same origin fallback)');
+  console.log('[Mineradio Web] Initialized. Platform:', window.MineradioWeb.platform);
+  console.log('[Mineradio Web] Server:', window.MOBILE_API_ORIGIN || '(not configured - same origin fallback)');
 })();
 
 
@@ -9229,7 +9229,7 @@ var stageLyrics = {
 
 // 移动端歌词布局是独立的本地偏好：不会覆盖桌面端的歌词位置。
 // 进入“调节”后单指拖动、双指缩放；陀螺仪只会在用户主动点击后请求权限。
-var MOBILE_LYRIC_TRANSFORM_KEY = 'mineradio-mobile-lyric-transform-v1';
+var MOBILE_LYRIC_TRANSFORM_KEY = 'mineradio-web-lyric-transform-v1';
 var mobileLyricTransform = {
   x: 0,
   y: 0,

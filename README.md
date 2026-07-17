@@ -55,7 +55,7 @@ public/                播放器前端源码
   mobile-player.css    移动端布局与样式
   home-player.*        播放器、队列、歌词和视觉效果
 server/
-  mobile-server.js     静态站点与 API 代理入口
+  web-server.js        静态站点与 API 代理入口
   server.js            上游音乐服务 API 适配
 api/                   部分托管环境使用的 API 入口
 www/                   npm run build 生成的部署目录
@@ -65,7 +65,7 @@ www/                   npm run build 生成的部署目录
 
 ## 配置
 
-`server/mobile-server.js` 支持以下环境变量：
+`server/web-server.js` 支持以下环境变量：
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -75,7 +75,7 @@ www/                   npm run build 生成的部署目录
 | `COOKIE_FILE` | `server/.cookie` | 网易云登录 Cookie 文件 |
 | `QQ_COOKIE_FILE` | `server/.qq-cookie` | QQ 音乐登录 Cookie 文件 |
 
-公网部署时，请让 Node.js 仅监听 `127.0.0.1`，并把 Cookie 放在应用目录外的受限路径，例如 `/var/lib/mineradio-mobile`。
+公网部署时，请让 Node.js 仅监听 `127.0.0.1`，并把 Cookie 放在应用目录外的受限路径，例如 `/var/lib/mineradio-web`。
 
 ## Ubuntu 生产部署
 
@@ -84,19 +84,19 @@ www/                   npm run build 生成的部署目录
 ### 1. 构建与持久化目录
 
 ```bash
-sudo mkdir -p /opt/mineradio-mobile /var/lib/mineradio-mobile
-sudo chown -R www-data:www-data /var/lib/mineradio-mobile
+sudo mkdir -p /opt/mineradio-web /var/lib/mineradio-web
+sudo chown -R www-data:www-data /var/lib/mineradio-web
 
-cd /opt/mineradio-mobile
+cd /opt/mineradio-web
 npm ci
 npm run build
 ```
 
-将仓库文件部署到 `/opt/mineradio-mobile`。若服务使用专用用户，请把上面示例中的 `www-data` 替换成该用户。
+将仓库文件部署到 `/opt/mineradio-web`。若服务使用专用用户，请把上面示例中的 `www-data` 替换成该用户。
 
 ### 2. systemd 服务
 
-创建 `/etc/systemd/system/mineradio-mobile.service`：
+创建 `/etc/systemd/system/mineradio-web.service`：
 
 ```ini
 [Unit]
@@ -106,13 +106,13 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/mineradio-mobile
+WorkingDirectory=/opt/mineradio-web
 Environment=PORT=3000
 Environment=HOST=127.0.0.1
-Environment=STATIC_DIR=/opt/mineradio-mobile/www
-Environment=COOKIE_FILE=/var/lib/mineradio-mobile/netease.cookie
-Environment=QQ_COOKIE_FILE=/var/lib/mineradio-mobile/qq.cookie
-ExecStart=/usr/bin/node /opt/mineradio-mobile/server/mobile-server.js
+Environment=STATIC_DIR=/opt/mineradio-web/www
+Environment=COOKIE_FILE=/var/lib/mineradio-web/netease.cookie
+Environment=QQ_COOKIE_FILE=/var/lib/mineradio-web/qq.cookie
+ExecStart=/usr/bin/node /opt/mineradio-web/server/web-server.js
 Restart=on-failure
 RestartSec=3
 
@@ -124,13 +124,13 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now mineradio-mobile
-sudo systemctl status mineradio-mobile
+sudo systemctl enable --now mineradio-web
+sudo systemctl status mineradio-web
 ```
 
 ### 3. Nginx 反向代理
 
-创建一个 Nginx server 配置（例如 `/etc/nginx/sites-available/mineradio-mobile`）：
+创建一个 Nginx server 配置（例如 `/etc/nginx/sites-available/mineradio-web`）：
 
 ```nginx
 server {
@@ -172,22 +172,22 @@ curl -I http://127.0.0.1:8088/
 常用排查命令：
 
 ```bash
-sudo systemctl status mineradio-mobile
-sudo journalctl -u mineradio-mobile -f
-sudo systemctl restart mineradio-mobile
+sudo systemctl status mineradio-web
+sudo journalctl -u mineradio-web -f
+sudo systemctl restart mineradio-web
 ```
 
 ## 更新部署
 
 ```bash
-cd /opt/mineradio-mobile
+cd /opt/mineradio-web
 git pull
 npm ci
 npm run build
-sudo systemctl restart mineradio-mobile
+sudo systemctl restart mineradio-web
 ```
 
-更新时不要删除 `/var/lib/mineradio-mobile`，否则服务器保存的登录会话会丢失。
+更新时不要删除 `/var/lib/mineradio-web`，否则服务器保存的登录会话会丢失。
 
 ## 许可证
 

@@ -4,9 +4,9 @@
   "description": "Mineradio 移动版 — 沉浸式音乐播放器",
   "scripts": {
     "dev": "vite",
-    "start": "node server/mobile-server.js",
+    "start": "node server/web-server.js",
     "build": "vite build && node -e \"var f=require('fs'),p=require('path');['vendor','assets'].forEach(function(d){var s=p.join('public',d),t=p.join('www',d);if(f.existsSync(s)){f.mkdirSync(t,{recursive:true});f.readdirSync(s).forEach(function(x){f.copyFileSync(p.join(s,x),p.join(t,x))})}});['home-player.css','ui-system.css','home-player.js'].forEach(function(x){var s=p.join('public',x),t=p.join('www',x);if(f.existsSync(s))f.copyFileSync(s,t)})\"",
-    "serve": "node server/mobile-server.js"
+    "serve": "node server/web-server.js"
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
