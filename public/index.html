@@ -20439,6 +20439,67 @@ function pauseCurrentAudioForTrackSwitch() {
   syncPlaybackStateFromAudioEvent('track-switch');
 }
 
+/* Browser Media Session is the web-safe bridge to Windows SMTC. It does not
+   require native code: Chromium/Edge publish this metadata and the handlers
+   to the Windows media flyout and hardware media keys. */
+var mediaSessionHandlersBound = false;
+var mediaSessionLastPositionAt = 0;
+function mediaSessionCurrentSong() {
+  return playQueue && currentIdx >= 0 ? playQueue[currentIdx] : null;
+}
+function bindMediaSessionHandlers() {
+  if (mediaSessionHandlersBound || !navigator.mediaSession) return;
+  mediaSessionHandlersBound = true;
+  function register(action, handler) {
+    try { navigator.mediaSession.setActionHandler(action, handler); } catch (e) {}
+  }
+  register('play', function(){ if (audio && audio.paused) togglePlay(); });
+  register('pause', function(){ if (audio && !audio.paused) togglePlay(); });
+  register('previoustrack', function(){ prevTrack(); });
+  register('nexttrack', function(){ nextTrack(); });
+  register('seekbackward', function(details){
+    if (!audio) return;
+    audio.currentTime = Math.max(0, (Number(audio.currentTime) || 0) - (details.seekOffset || 10));
+    updatePlaybackProgressUi();
+  });
+  register('seekforward', function(details){
+    if (!audio) return;
+    var end = Number(audio.duration) || Infinity;
+    audio.currentTime = Math.min(end, (Number(audio.currentTime) || 0) + (details.seekOffset || 10));
+    updatePlaybackProgressUi();
+  });
+  register('seekto', function(details){
+    if (!audio || !isFinite(details.seekTime)) return;
+    try { audio.currentTime = Math.max(0, Math.min(Number(audio.duration) || details.seekTime, details.seekTime)); } catch (e) {}
+    updatePlaybackProgressUi();
+  });
+  register('stop', function(){ if (audio && !audio.paused) togglePlay(); });
+}
+function syncMediaSession(forcePosition) {
+  if (!navigator.mediaSession || !window.MediaMetadata) return;
+  bindMediaSessionHandlers();
+  var song = mediaSessionCurrentSong();
+  if (song) {
+    var cover = '';
+    try { cover = songCoverSrc(song, 512) || song.cover || ''; } catch (e) { cover = song.cover || ''; }
+    var artwork = cover ? [{ src:cover, sizes:'512x512', type:'image/jpeg' }] : [];
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: song.name || 'Mineradio', artist: song.artist || '未知歌手',
+        album: song.album || song.albumName || 'Mineradio', artwork:artwork
+      });
+    } catch (e) {}
+  }
+  try { navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'; } catch (e) {}
+  var now = Date.now();
+  if (!forcePosition && now - mediaSessionLastPositionAt < 900) return;
+  if (!audio || !isFinite(audio.duration) || audio.duration <= 0 || !isFinite(audio.currentTime)) return;
+  try {
+    navigator.mediaSession.setPositionState({ duration:audio.duration, playbackRate:audio.playbackRate || 1, position:Math.max(0, Math.min(audio.duration, audio.currentTime)) });
+    mediaSessionLastPositionAt = now;
+  } catch (e) {}
+}
+
 function syncPlaybackStateFromAudioEvent(reason) {
   var isPlaying = !!(audio && audio.src && !audio.paused && !audio.ended);
   playing = isPlaying;
@@ -20446,6 +20507,7 @@ function syncPlaybackStateFromAudioEvent(reason) {
   if (!isPlaying) hideLoading();
   if (reason === 'play' || reason === 'playing') switchPlaybackVisualToEmily();
   forcePlaybackControlsInteractive();
+  syncMediaSession(true);
 }
 
 function isPlaybackRecursionError(err) {
@@ -22040,6 +22102,9 @@ function bindPlaybackProgressEvents(audioEl) {
   audioEl._mineradioProgressBound = true;
   ['loadedmetadata', 'durationchange', 'timeupdate', 'seeked', 'play', 'pause', 'emptied'].forEach(function(name){
     audioEl.addEventListener(name, updatePlaybackProgressUi);
+  });
+  ['loadedmetadata', 'durationchange', 'timeupdate', 'seeked'].forEach(function(name){
+    audioEl.addEventListener(name, function(){ syncMediaSession(name !== 'timeupdate'); });
   });
   ['play', 'playing', 'pause', 'ended', 'emptied', 'abort', 'error'].forEach(function(name){
     audioEl.addEventListener(name, function(){ syncPlaybackStateFromAudioEvent(name); });
