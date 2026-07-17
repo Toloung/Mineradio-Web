@@ -13,6 +13,7 @@
 <script>
 try {
   document.documentElement.classList.add(localStorage.getItem('mineradio-diy-player-mode-v1') === '1' ? 'diy-mode-preload' : 'simple-mode-preload');
+  if (localStorage.getItem('mineradio-ui-theme-v1') === 'light') document.documentElement.classList.add('ui-light-preload');
 } catch (e) {
   document.documentElement.classList.add('simple-mode-preload');
 }
@@ -3086,8 +3087,26 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
   <div class="fx-section-label">用户存档</div>
   <div class="user-archive-grid" id="user-archive-grid"></div>
   <div class="fx-section-label">自定义颜色</div>
+  <div id="ui-theme-control" class="fx-theme-control">
+    <div class="fx-theme-control-copy"><strong>界面主题</strong><small>统一播放器、搜索、队列与设置的明暗外观</small></div>
+    <div class="fx-seg fx-theme-seg" id="ui-theme-seg" aria-label="界面主题">
+      <button type="button" data-ui-theme="dark" onclick="setUiTheme('dark')">深色</button>
+      <button type="button" data-ui-theme="light" onclick="setUiTheme('light')">浅色</button>
+    </div>
+  </div>
+  <div id="ui-accent-palette" class="ui-accent-palette" aria-label="强调色板">
+    <div class="fx-theme-control-copy"><strong>全局强调色</strong><small>选择一个色板，或用下方取色器自定义</small></div>
+    <div class="ui-accent-swatches" role="list">
+      <button type="button" data-ui-accent="#ef3f78" style="--swatch:#ef3f78" title="玫红" aria-label="玫红"></button>
+      <button type="button" data-ui-accent="#7c5cff" style="--swatch:#7c5cff" title="靛蓝" aria-label="靛蓝"></button>
+      <button type="button" data-ui-accent="#1686e8" style="--swatch:#1686e8" title="海蓝" aria-label="海蓝"></button>
+      <button type="button" data-ui-accent="#12a77b" style="--swatch:#12a77b" title="青绿" aria-label="青绿"></button>
+      <button type="button" data-ui-accent="#d98a18" style="--swatch:#d98a18" title="琥珀" aria-label="琥珀"></button>
+      <button type="button" data-ui-accent="#d54e5c" style="--swatch:#d54e5c" title="珊瑚" aria-label="珊瑚"></button>
+    </div>
+  </div>
   <div class="lyric-color-row">
-    <input id="ui-accent-picker" class="lyric-color-picker" type="color" value="#00f5d4" title="界面高亮色">
+    <input id="ui-accent-picker" class="lyric-color-picker" type="color" value="#ef3f78" title="界面高亮色">
     <div class="fx-color-row-label">界面高亮<small id="ui-accent-value">#00F5D4</small></div>
     <button class="fx-mini-btn ghost" type="button" onclick="resetUiAccentColor()">默认</button>
   </div>
@@ -4330,6 +4349,7 @@ var PLAYBACK_QUALITY_STORE_KEY = 'mineradio-playback-quality-v1';
 var PLAYBACK_QUALITY_MODE_STORE_KEY = 'mineradio-playback-quality-mode-v2';
 var UPLOAD_TIP_STORE_KEY = 'mineradio-upload-tip-seen';
 var DIY_MODE_STORE_KEY = 'mineradio-diy-player-mode-v1';
+var UI_THEME_STORE_KEY = 'mineradio-ui-theme-v1';
 var PLAYLIST_PANEL_PIN_STORE_KEY = 'mineradio-playlist-panel-pinned-v1';
 var USER_CAPSULE_AUTO_HIDE_STORE_KEY = 'mineradio-user-capsule-auto-hide-v1';
 var FX_FAB_AUTO_HIDE_STORE_KEY = 'mineradio-fx-fab-auto-hide-v1';
@@ -4480,6 +4500,33 @@ function readDiyModePreference() {
 function saveDiyModePreference(on) {
   try { localStorage.setItem(DIY_MODE_STORE_KEY, on ? '1' : '0'); } catch (e) {}
 }
+function readUiThemePreference() {
+  try { return localStorage.getItem(UI_THEME_STORE_KEY) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; }
+}
+function updateUiThemeControls() {
+  var theme = readUiThemePreference();
+  document.querySelectorAll('[data-ui-theme]').forEach(function(btn){
+    btn.classList.toggle('active', btn.getAttribute('data-ui-theme') === theme);
+    btn.setAttribute('aria-pressed', btn.getAttribute('data-ui-theme') === theme ? 'true' : 'false');
+  });
+}
+function updateUiAccentPalette() {
+  var accent = normalizeHexColor(fx && fx.uiAccentColor || '#ef3f78', '#ef3f78');
+  document.querySelectorAll('[data-ui-accent]').forEach(function(btn){
+    btn.classList.toggle('active', normalizeHexColor(btn.getAttribute('data-ui-accent'), '#000000') === accent);
+  });
+}
+function applyUiTheme(theme, silent) {
+  var resolved = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.uiTheme = resolved;
+  document.documentElement.classList.toggle('ui-light-preload', resolved === 'light');
+  document.body.classList.toggle('ui-light', resolved === 'light');
+  try { localStorage.setItem(UI_THEME_STORE_KEY, resolved); } catch (e) {}
+  updateUiThemeControls();
+  if (typeof applyUiAccentColor === 'function' && typeof fx !== 'undefined') applyUiAccentColor();
+  if (!silent && typeof showToast === 'function') showToast(resolved === 'light' ? '已切换为浅色模式' : '已切换为深色模式');
+}
+function setUiTheme(theme) { applyUiTheme(theme, false); }
 function readBooleanPreference(key, fallback) {
   try {
     var raw = localStorage.getItem(key);
@@ -4833,7 +4880,7 @@ var fxDefaults = {
   lyricWeight: 900,
   visualTintMode: 'auto',
   visualTintColor: '#9db8cf',
-  uiAccentColor: '#ffffff',
+  uiAccentColor: '#ef3f78',
   homeAccentColor: '#ffffff',
   homeIconColor: '#ffffff',
   visualIconColor: '#ffffff',
@@ -4919,7 +4966,7 @@ var PACKAGED_DEFAULT_FX_SNAPSHOT = Object.freeze({
   lyricWeight: 900,
   visualTintMode: 'auto',
   visualTintColor: '#9db8cf',
-  uiAccentColor: '#ffffff',
+  uiAccentColor: '#ef3f78',
   homeAccentColor: '#ffffff',
   homeIconColor: '#ffffff',
   visualIconColor: '#ffffff',
@@ -9692,7 +9739,7 @@ function readSavedLyricLayout() {
       edge: raw.edge === true,
       visualTintMode: raw.visualTintMode === 'custom' ? 'custom' : 'auto',
       visualTintColor: normalizeHexColor(raw.visualTintColor || '#9db8cf'),
-      uiAccentColor: normalizeHexColor(raw.uiAccentColor || '#00f5d4', '#00f5d4'),
+      uiAccentColor: normalizeHexColor(raw.uiAccentColor || '#ef3f78', '#ef3f78'),
       homeAccentColor: normalizeHexColor(raw.homeAccentColor || '#00f5d4'),
       homeIconColor: normalizeHexColor(raw.homeIconColor || fxDefaults.homeIconColor || '#f4d28a', '#f4d28a'),
       visualIconColor: normalizeHexColor(raw.visualIconColor || fxDefaults.visualIconColor || '#7fd8ff', '#7fd8ff'),
@@ -9786,7 +9833,7 @@ function saveLyricLayout() {
       edge: !!fx.edge,
       visualTintMode: fx.visualTintMode === 'custom' ? 'custom' : 'auto',
       visualTintColor: normalizeHexColor(fx.visualTintColor || '#9db8cf'),
-      uiAccentColor: normalizeHexColor(fx.uiAccentColor || '#00f5d4', '#00f5d4'),
+      uiAccentColor: normalizeHexColor(fx.uiAccentColor || '#ef3f78', '#ef3f78'),
       homeAccentColor: normalizeHexColor(fx.homeAccentColor || '#00f5d4'),
       homeIconColor: normalizeHexColor(fx.homeIconColor || '#f4d28a', '#f4d28a'),
       visualIconColor: normalizeHexColor(fx.visualIconColor || '#7fd8ff', '#7fd8ff'),
@@ -10338,7 +10385,7 @@ window.addEventListener('resize', function(){
   else repositionFxFloatingPanels();
 });
 function uiAccentHex(fallback) {
-  return normalizeHexColor((fx && fx.uiAccentColor) || fallback || '#00f5d4', fallback || '#00f5d4');
+  return normalizeHexColor((fx && fx.uiAccentColor) || fallback || '#ef3f78', fallback || '#ef3f78');
 }
 function uiAccentRgba(alpha, fallback) {
   var c = hexToRgb(uiAccentHex(fallback));
@@ -23388,32 +23435,38 @@ function readBackgroundMediaFile(file) {
   else showToast('请选择图片或视频文件');
 }
 function applyUiAccentColor() {
-  var color = normalizeHexColor(fx.uiAccentColor || '#00f5d4', '#00f5d4');
+  var color = normalizeHexColor(fx.uiAccentColor || '#ef3f78', '#ef3f78');
   var rgb = hexToRgb(color);
   var root = document.documentElement;
   root.style.setProperty('--fc-accent', color);
   root.style.setProperty('--fc-accent-hov', color);
   root.style.setProperty('--fc-accent-rgb', rgb.r + ',' + rgb.g + ',' + rgb.b);
+  root.style.setProperty('--ui-accent', color);
+  root.style.setProperty('--ui-accent-rgb', rgb.r + ',' + rgb.g + ',' + rgb.b);
+  root.style.setProperty('--ui-accent-soft', 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',.13)');
+  root.style.setProperty('--hp-accent', color);
+  root.style.setProperty('--hp-accent-soft', 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',.13)');
   root.style.setProperty('--glass-border', 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',.30)');
   root.style.setProperty('--glass-shadow-focus', '0 24px 72px rgba(0,0,0,.34),0 0 0 1px rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',.13),0 0 42px rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',.075),inset 0 1px 0 rgba(255,255,255,.20)');
 }
 function updateUiAccentControls() {
   applyUiAccentColor();
-  var color = normalizeHexColor(fx.uiAccentColor || '#00f5d4', '#00f5d4');
+  var color = normalizeHexColor(fx.uiAccentColor || '#ef3f78', '#ef3f78');
   var picker = document.getElementById('ui-accent-picker');
   var value = document.getElementById('ui-accent-value');
   if (picker) picker.value = color;
   if (value) value.textContent = color.toUpperCase();
+  updateUiAccentPalette();
 }
 function setUiAccentColor(color, silent) {
-  fx.uiAccentColor = normalizeHexColor(color || '#00f5d4', '#00f5d4');
+  fx.uiAccentColor = normalizeHexColor(color || '#ef3f78', '#ef3f78');
   updateUiAccentControls();
   if (shelfManager && shelfManager.refreshTheme) shelfManager.refreshTheme();
   saveLyricLayout();
   if (!silent) showToast('界面高亮: ' + fx.uiAccentColor.toUpperCase());
 }
 function resetUiAccentColor() {
-  setUiAccentColor(fxDefaults.uiAccentColor || '#00f5d4');
+  setUiAccentColor(fxDefaults.uiAccentColor || '#ef3f78');
 }
 function updateVisualTintControls() {
   var picker = document.getElementById('visual-tint-picker');
@@ -24054,6 +24107,7 @@ function fxPanelTargetForNode(node, current) {
   if (id === 'fx-lyric-fold') return 'lyrics';
   if (id === 'fx-overlay-fold' || id === 'fx-stage-fold') return 'motion';
   if (id === 'fx-advanced' || node.classList.contains('fx-actions')) return 'advanced';
+  if (id === 'ui-theme-control' || id === 'ui-accent-palette') return 'appearance';
   if (node.classList.contains('lyric-color-row') || node.classList.contains('cover-color-pop') || node.classList.contains('color-lab-pop') || node.classList.contains('cover-color-loupe')) return 'appearance';
   if (inputId === 'fx-bgopacity' || inputId === 'fx-glassaberration') return 'appearance';
   if (inputId === 'fx-lyricglow') return 'lyrics';
@@ -24676,6 +24730,9 @@ function bindFxPanel() {
     uiAccentPicker.addEventListener('input', function(){ setUiAccentColor(uiAccentPicker.value, true); });
     uiAccentPicker.addEventListener('change', function(){ showToast('界面高亮: ' + normalizeHexColor(uiAccentPicker.value, '#00f5d4').toUpperCase()); });
   }
+  document.querySelectorAll('[data-ui-accent]').forEach(function(btn){
+    btn.addEventListener('click', function(){ setUiAccentColor(btn.getAttribute('data-ui-accent')); });
+  });
   var visualTintPicker = document.getElementById('visual-tint-picker');
   if (visualTintPicker) {
     visualTintPicker.addEventListener('input', function(){ setVisualTintCustom(visualTintPicker.value, true); });
@@ -29034,6 +29091,7 @@ function toggleFullscreen() {
 // ============================================================
 applyDiyMode(diyPlayerMode, { save: false });
 bindFxPanel();
+applyUiTheme(readUiThemePreference(), true);
 applySavedLyricPaletteState();
 bindQualityControl();
 bindVolumeControls();
