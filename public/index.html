@@ -3074,6 +3074,7 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
     <div class="fx-fold-body">
       <div class="fx-toggle-grid">
         <div class="fx-toggle" id="t-coverParticles" onclick="toggleFx('coverParticles')"><span>显示背景粒子</span><span class="dot"></span></div>
+        <div class="fx-toggle" id="t-particleSpectrum" onclick="toggleFx('particleSpectrum')"><span>粒子波谱</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-float" onclick="toggleFx('floatLayer')"><span>浮空粒子层</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-cinema" onclick="toggleFx('cinema')"><span>电影镜头</span><span class="dot"></span></div>
         <div class="fx-toggle" id="t-lyricGlow" onclick="toggleFx('lyricGlow')"><span>歌词溢光</span><span class="dot"></span></div>
@@ -4732,6 +4733,7 @@ var fxDefaults = {
   wallpaperMode: false,
   wallpaperOpacity: 1,
   coverParticles: true,
+  particleSpectrum: false,
   floatLayer: false, cinema: true, edge: false, aiDepth: false, bloom: false, lyricGlow: true,
   lyricGlowBeat: true,
   lyricGlowParticles: false,
@@ -4805,6 +4807,7 @@ var PACKAGED_DEFAULT_FX_SNAPSHOT = Object.freeze({
   controlGlassChromaticOffset: 90,
   backgroundColorCustom: false,
   coverParticles: true,
+  particleSpectrum: false,
   floatLayer: false,
   cinema: true,
   edge: false,
@@ -8161,6 +8164,144 @@ function destroyFloatLayer() {
 }
 
 // ============================================================
+//  Particle spectrum — a lightweight audio-reactive point field
+// ============================================================
+var PARTICLE_SPECTRUM_BARS = 56;
+var PARTICLE_SPECTRUM_STEPS = 12;
+var particleSpectrum = null;
+var particleSpectrumPositions = null;
+var particleSpectrumColors = null;
+var particleSpectrumColumns = null;
+var particleSpectrumLevels = null;
+var particleSpectrumSeeds = null;
+var particleSpectrumSmooth = new Float32Array(PARTICLE_SPECTRUM_BARS);
+var particleSpectrumPaletteKey = '';
+
+function particleSpectrumPalette() {
+  var pal = stageLyrics && (stageLyrics.coverPalette || stageLyrics.palette) || {};
+  var base = fx && fx.visualTintMode === 'custom'
+    ? normalizeHexColor(fx.visualTintColor || '#9db8cf')
+    : normalizeHexColor(pal.secondary || pal.primary || (fx && fx.visualTintColor) || '#9db8cf');
+  var accent = normalizeHexColor(pal.highlight || pal.primary || base, base);
+  return { base: base, accent: accent, key: base + '|' + accent };
+}
+function refreshParticleSpectrumColors(force) {
+  if (!particleSpectrum || !particleSpectrumColors) return;
+  var palette = particleSpectrumPalette();
+  if (!force && palette.key === particleSpectrumPaletteKey) return;
+  particleSpectrumPaletteKey = palette.key;
+  var base = new THREE.Color(palette.base);
+  var accent = new THREE.Color(palette.accent);
+  var color = new THREE.Color();
+  for (var i = 0; i < particleSpectrumColumns.length; i++) {
+    var level = particleSpectrumLevels[i];
+    var xRatio = particleSpectrumColumns[i] / Math.max(1, PARTICLE_SPECTRUM_BARS - 1);
+    color.copy(base).lerp(accent, Math.min(0.78, level * 0.62 + xRatio * 0.16));
+    particleSpectrumColors[i * 3] = color.r;
+    particleSpectrumColors[i * 3 + 1] = color.g;
+    particleSpectrumColors[i * 3 + 2] = color.b;
+  }
+  particleSpectrum.geometry.attributes.color.needsUpdate = true;
+}
+function createParticleSpectrum() {
+  if (particleSpectrum) {
+    particleSpectrum.visible = true;
+    refreshParticleSpectrumColors();
+    return;
+  }
+  var count = PARTICLE_SPECTRUM_BARS * PARTICLE_SPECTRUM_STEPS;
+  var geometry = new THREE.BufferGeometry();
+  particleSpectrumPositions = new Float32Array(count * 3);
+  particleSpectrumColors = new Float32Array(count * 3);
+  particleSpectrumColumns = new Uint16Array(count);
+  particleSpectrumLevels = new Float32Array(count);
+  particleSpectrumSeeds = new Float32Array(count);
+  for (var col = 0; col < PARTICLE_SPECTRUM_BARS; col++) {
+    for (var step = 0; step < PARTICLE_SPECTRUM_STEPS; step++) {
+      var index = col * PARTICLE_SPECTRUM_STEPS + step;
+      particleSpectrumColumns[index] = col;
+      particleSpectrumLevels[index] = (step + 0.45) / PARTICLE_SPECTRUM_STEPS;
+      particleSpectrumSeeds[index] = Math.random();
+      particleSpectrumPositions[index * 3] = (col / (PARTICLE_SPECTRUM_BARS - 1) - 0.5) * 7.45;
+      particleSpectrumPositions[index * 3 + 1] = -8;
+      particleSpectrumPositions[index * 3 + 2] = 0;
+    }
+  }
+  geometry.setAttribute('position', new THREE.BufferAttribute(particleSpectrumPositions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(particleSpectrumColors, 3));
+  var spectrumMaterial = new THREE.PointsMaterial({
+    size: 0.052,
+    map: uniforms.uDotTex.value,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false,
+    depthTest: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true
+  });
+  particleSpectrum = new THREE.Points(geometry, spectrumMaterial);
+  particleSpectrum.frustumCulled = false;
+  particleSpectrum.renderOrder = 3;
+  scene.add(particleSpectrum);
+  refreshParticleSpectrumColors(true);
+}
+function destroyParticleSpectrum() {
+  if (!particleSpectrum) return;
+  scene.remove(particleSpectrum);
+  particleSpectrum.geometry.dispose();
+  particleSpectrum.material.dispose();
+  particleSpectrum = null;
+  particleSpectrumPositions = null;
+  particleSpectrumColors = null;
+  particleSpectrumColumns = null;
+  particleSpectrumLevels = null;
+  particleSpectrumSeeds = null;
+  particleSpectrumSmooth.fill(0);
+  particleSpectrumPaletteKey = '';
+}
+function updateParticleSpectrum(dt) {
+  if (!particleSpectrum) return;
+  if (!fx || fx.particleSpectrum !== true) {
+    particleSpectrum.visible = false;
+    return;
+  }
+  particleSpectrum.visible = true;
+  var activeAudio = !!(analyser && playing && audio && !audio.paused && frequencyData && frequencyData.length);
+  var attack = Math.min(1, Math.max(0.10, dt * 9.5));
+  var release = Math.min(1, Math.max(0.04, dt * 3.3));
+  for (var col = 0; col < PARTICLE_SPECTRUM_BARS; col++) {
+    var ratio = col / Math.max(1, PARTICLE_SPECTRUM_BARS - 1);
+    var bin = Math.min(frequencyData.length - 1, 3 + Math.floor(Math.pow(ratio, 1.72) * 330));
+    var raw = activeAudio ? (frequencyData[bin] || 0) / 255 : 0;
+    raw = Math.pow(raw, 0.72);
+    var target = activeAudio ? Math.max(0.045, raw * 0.94 + smoothBass * (1 - ratio) * 0.15 + beatPulse * 0.10) : 0;
+    var prev = particleSpectrumSmooth[col] || 0;
+    particleSpectrumSmooth[col] = prev + (target - prev) * (target > prev ? attack : release);
+  }
+  for (var i = 0; i < particleSpectrumColumns.length; i++) {
+    var column = particleSpectrumColumns[i];
+    var level = particleSpectrumLevels[i];
+    var amplitude = particleSpectrumSmooth[column];
+    var visible = level <= amplitude;
+    var offset = i * 3;
+    if (!visible) {
+      particleSpectrumPositions[offset + 1] = -8;
+      continue;
+    }
+    var seed = particleSpectrumSeeds[i];
+    var x = (column / (PARTICLE_SPECTRUM_BARS - 1) - 0.5) * 7.45;
+    particleSpectrumPositions[offset] = x + (seed - 0.5) * 0.045;
+    particleSpectrumPositions[offset + 1] = -1.62 + level * (0.32 + amplitude * 1.62) + Math.sin(uniforms.uTime.value * 2.4 + seed * 17) * 0.025;
+    particleSpectrumPositions[offset + 2] = 0.26 + (seed - 0.5) * 0.12 - level * 0.08;
+  }
+  particleSpectrum.geometry.attributes.position.needsUpdate = true;
+  particleSpectrum.material.size = 0.045 + smoothBass * 0.030 + beatPulse * 0.012;
+  particleSpectrum.material.opacity = activeAudio ? Math.min(1, 0.68 + smoothEnergy * 0.28) : 0.16;
+  refreshParticleSpectrumColors();
+}
+
+// ============================================================
 //  安魂 — 3D 粒子建模层
 // ============================================================
 var SKULL_PRESET_INDEX = 6;
@@ -9421,6 +9562,7 @@ function readSavedLyricLayout() {
       lyricGlowBeat: raw.lyricGlowBeat !== false,
       lyricGlowParticles: !!raw.lyricGlowParticles,
       coverParticles: raw.coverParticles !== false,
+      particleSpectrum: raw.particleSpectrum === true,
       particleLyrics: raw.particleLyrics !== false,
       lyricRenderMode: raw.lyricRenderMode === 'plain' ? 'plain' : 'particles',
       cinema: raw.cinema !== false,
@@ -9514,6 +9656,7 @@ function saveLyricLayout() {
       lyricGlowBeat: !!fx.lyricGlowBeat,
       lyricGlowParticles: !!fx.lyricGlowParticles,
       coverParticles: fx.coverParticles !== false,
+      particleSpectrum: fx.particleSpectrum === true,
       particleLyrics: fx.particleLyrics !== false,
       lyricRenderMode: fx.lyricRenderMode === 'plain' ? 'plain' : 'particles',
       cinema: !!fx.cinema,
@@ -22378,6 +22521,7 @@ function normalizeFxArchiveSnapshot(raw) {
     backgroundColorCustom: raw.backgroundColorMode === 'custom' || !!raw.backgroundColorCustom,
     floatLayer: !!raw.floatLayer,
     coverParticles: raw.coverParticles !== false,
+    particleSpectrum: raw.particleSpectrum === true,
     cinema: raw.cinema !== false,
     edge: !!raw.edge,
     aiDepth: !!raw.aiDepth,
@@ -22493,6 +22637,7 @@ function applyFxArchiveSnapshot(snapshot) {
   setPreset(targetPreset, { silent: true, preserveCamera: false, skipTransition: false, noSave: true, commitPlaybackPreset: true });
   applyCoverParticleResolution(fx.coverResolution, { reload: true });
   if (fx.floatLayer) createFloatLayer(); else destroyFloatLayer();
+  if (fx.particleSpectrum) createParticleSpectrum(); else destroyParticleSpectrum();
   setParticleLyricsSilently(fx.particleLyrics);
   if (fx.backCover) createBackCoverLayer(); else destroyBackCoverLayer();
   if (fx.aiDepth) {
@@ -23502,6 +23647,7 @@ function syncFxUniforms() {
      The old 0.42 mix was often indistinguishable from cover sampling. */
   if (uniforms.uTintStrength) uniforms.uTintStrength.value = fx.visualTintMode === 'custom' ? 0.72 : 0;
   syncSkullParticleColors();
+  refreshParticleSpectrumColors(true);
 }
 var homeWaveTrackState = { bars: 0, smooth: [] };
 function ensureHomeWaveTrackBars() {
@@ -23674,6 +23820,8 @@ function updateFxInputs() {
   if (floatToggle) floatToggle.classList.toggle('on', fx.floatLayer);
   var coverParticlesToggle = document.getElementById('t-coverParticles');
   if (coverParticlesToggle) coverParticlesToggle.classList.toggle('on', fx.coverParticles !== false);
+  var particleSpectrumToggle = document.getElementById('t-particleSpectrum');
+  if (particleSpectrumToggle) particleSpectrumToggle.classList.toggle('on', fx.particleSpectrum === true);
   document.getElementById('t-cinema').classList.toggle('on', fx.cinema);
   var lyricGlowToggle = document.getElementById('t-lyricGlow');
   if (lyricGlowToggle) lyricGlowToggle.classList.toggle('on', fx.lyricGlow);
@@ -24568,8 +24716,12 @@ function toggleFx(key) {
   var toggle = document.getElementById(toggleId);
   if (toggle) toggle.classList.toggle('on', fx[key]);
   syncFxUniforms();
-  if (key === 'coverParticles' || key === 'lyricCameraLock' || key === 'lyricGlow' || key === 'lyricGlowBeat' || key === 'lyricGlowParticles' || key === 'bloom' || key === 'edge' || key === 'cinema' || key === 'desktopLyrics' || key === 'desktopLyricsClickThrough' || key === 'desktopLyricsCinema' || key === 'desktopLyricsHighlight' || key === 'wallpaperMode' || key === 'shelfShowPodcasts' || key === 'shelfMergeCollections' || key === 'liveBackgroundKeep') saveLyricLayout();
+  if (key === 'coverParticles' || key === 'particleSpectrum' || key === 'lyricCameraLock' || key === 'lyricGlow' || key === 'lyricGlowBeat' || key === 'lyricGlowParticles' || key === 'bloom' || key === 'edge' || key === 'cinema' || key === 'desktopLyrics' || key === 'desktopLyricsClickThrough' || key === 'desktopLyricsCinema' || key === 'desktopLyricsHighlight' || key === 'wallpaperMode' || key === 'shelfShowPodcasts' || key === 'shelfMergeCollections' || key === 'liveBackgroundKeep') saveLyricLayout();
   if (key === 'coverParticles') showToast(fx.coverParticles !== false ? '背景粒子已显示' : '背景粒子已隐藏');
+  if (key === 'particleSpectrum') {
+    if (fx.particleSpectrum) createParticleSpectrum(); else destroyParticleSpectrum();
+    showToast(fx.particleSpectrum ? '粒子波谱已开启' : '粒子波谱已关闭');
+  }
   if (key === 'floatLayer') { if (fx.floatLayer) createFloatLayer(); else destroyFloatLayer(); }
   if (key === 'desktopLyrics') applyDesktopLyricsState(true);
   if (key === 'desktopLyricsClickThrough' || key === 'desktopLyricsCinema' || key === 'desktopLyricsHighlight') pushDesktopLyricsState(true);
@@ -24661,6 +24813,7 @@ function resetFx() {
   setStageLyricPalette(stageLyrics.coverPalette || stageLyrics.palette);
   setPreset(fx.preset, { silent: true, preserveCamera: true, skipTransition: true });
   if (fx.floatLayer) createFloatLayer(); else destroyFloatLayer();
+  if (fx.particleSpectrum) createParticleSpectrum(); else destroyParticleSpectrum();
   if (shelfManager && shelfManager.rebuild) shelfManager.rebuild(true);
   if (shelfManager && shelfManager.refreshTheme) shelfManager.refreshTheme();
   saveLyricLayout();
@@ -28794,6 +28947,7 @@ setShelfMode(fx.shelf);
 applyStartupStarfieldPreset();
 applyPlaylistPanelPinState(false);
 if (fx.floatLayer) createFloatLayer();
+if (fx.particleSpectrum) createParticleSpectrum();
 if (fx.particleLyrics) createLyricsParticles();
 if (fx.backCover) createBackCoverLayer();
 initIdleGuideCanvas();
@@ -29121,6 +29275,7 @@ function animate() {
   if (bloomParticles) bloomParticles.visible = backgroundParticlesVisible && fx.bloom && fx.bloomStrength > 0.01;
   if (floatGroup) floatGroup.visible = backgroundParticlesVisible && !!fx.floatLayer;
   if (backCoverGroup) backCoverGroup.visible = backgroundParticlesVisible && !!fx.backCover;
+  updateParticleSpectrum(dt);
   var targetRotY = orbit.centerLocked ? 0 : (headParallax.active ? headParallax.x * 0.5 : 0) + gestureRotation.y;
   var targetRotX = orbit.centerLocked ? 0 : (headParallax.active ? -headParallax.y * 0.35 : 0) + gestureRotation.x;
   particles.rotation.y += (targetRotY - particles.rotation.y) * 0.055;
