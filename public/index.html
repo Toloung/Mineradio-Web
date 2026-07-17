@@ -13,7 +13,6 @@
 <script>
 try {
   document.documentElement.classList.add(localStorage.getItem('mineradio-diy-player-mode-v1') === '1' ? 'diy-mode-preload' : 'simple-mode-preload');
-  if (localStorage.getItem('mineradio-ui-theme-v1') === 'light') document.documentElement.classList.add('ui-light-preload');
 } catch (e) {
   document.documentElement.classList.add('simple-mode-preload');
 }
@@ -3087,15 +3086,8 @@ if (!/Electron/i.test(navigator.userAgent || '') && window.matchMedia('(min-widt
   <div class="fx-section-label">用户存档</div>
   <div class="user-archive-grid" id="user-archive-grid"></div>
   <div class="fx-section-label">自定义颜色</div>
-  <div id="ui-theme-control" class="fx-theme-control">
-    <div class="fx-theme-control-copy"><strong>界面主题</strong><small>统一播放器、搜索、队列与设置的明暗外观</small></div>
-    <div class="fx-seg fx-theme-seg" id="ui-theme-seg" aria-label="界面主题">
-      <button type="button" data-ui-theme="dark" onclick="setUiTheme('dark')">深色</button>
-      <button type="button" data-ui-theme="light" onclick="setUiTheme('light')">浅色</button>
-    </div>
-  </div>
   <div id="ui-accent-palette" class="ui-accent-palette" aria-label="强调色板">
-    <div class="fx-theme-control-copy"><strong>全局强调色</strong><small>选择一个色板，或用下方取色器自定义</small></div>
+    <div class="ui-accent-copy"><strong>全局强调色</strong><small>选择一个色板，或用下方取色器自定义</small></div>
     <div class="ui-accent-swatches" role="list">
       <button type="button" data-ui-accent="#ef3f78" style="--swatch:#ef3f78" title="玫红" aria-label="玫红"></button>
       <button type="button" data-ui-accent="#7c5cff" style="--swatch:#7c5cff" title="靛蓝" aria-label="靛蓝"></button>
@@ -4349,7 +4341,6 @@ var PLAYBACK_QUALITY_STORE_KEY = 'mineradio-playback-quality-v1';
 var PLAYBACK_QUALITY_MODE_STORE_KEY = 'mineradio-playback-quality-mode-v2';
 var UPLOAD_TIP_STORE_KEY = 'mineradio-upload-tip-seen';
 var DIY_MODE_STORE_KEY = 'mineradio-diy-player-mode-v1';
-var UI_THEME_STORE_KEY = 'mineradio-ui-theme-v1';
 var PLAYLIST_PANEL_PIN_STORE_KEY = 'mineradio-playlist-panel-pinned-v1';
 var USER_CAPSULE_AUTO_HIDE_STORE_KEY = 'mineradio-user-capsule-auto-hide-v1';
 var FX_FAB_AUTO_HIDE_STORE_KEY = 'mineradio-fx-fab-auto-hide-v1';
@@ -4500,33 +4491,12 @@ function readDiyModePreference() {
 function saveDiyModePreference(on) {
   try { localStorage.setItem(DIY_MODE_STORE_KEY, on ? '1' : '0'); } catch (e) {}
 }
-function readUiThemePreference() {
-  try { return localStorage.getItem(UI_THEME_STORE_KEY) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; }
-}
-function updateUiThemeControls() {
-  var theme = readUiThemePreference();
-  document.querySelectorAll('[data-ui-theme]').forEach(function(btn){
-    btn.classList.toggle('active', btn.getAttribute('data-ui-theme') === theme);
-    btn.setAttribute('aria-pressed', btn.getAttribute('data-ui-theme') === theme ? 'true' : 'false');
-  });
-}
 function updateUiAccentPalette() {
   var accent = normalizeHexColor(fx && fx.uiAccentColor || '#ef3f78', '#ef3f78');
   document.querySelectorAll('[data-ui-accent]').forEach(function(btn){
     btn.classList.toggle('active', normalizeHexColor(btn.getAttribute('data-ui-accent'), '#000000') === accent);
   });
 }
-function applyUiTheme(theme, silent) {
-  var resolved = theme === 'light' ? 'light' : 'dark';
-  document.documentElement.dataset.uiTheme = resolved;
-  document.documentElement.classList.toggle('ui-light-preload', resolved === 'light');
-  document.body.classList.toggle('ui-light', resolved === 'light');
-  try { localStorage.setItem(UI_THEME_STORE_KEY, resolved); } catch (e) {}
-  updateUiThemeControls();
-  if (typeof applyUiAccentColor === 'function' && typeof fx !== 'undefined') applyUiAccentColor();
-  if (!silent && typeof showToast === 'function') showToast(resolved === 'light' ? '已切换为浅色模式' : '已切换为深色模式');
-}
-function setUiTheme(theme) { applyUiTheme(theme, false); }
 function readBooleanPreference(key, fallback) {
   try {
     var raw = localStorage.getItem(key);
@@ -22624,14 +22594,6 @@ var lyricColorPresets = [
 var USER_FX_ARCHIVE_STORE_KEY = 'mineradio-user-fx-archives-v1';
 var USER_FX_ARCHIVE_EXPORT_TYPE = 'mineradio-user-fx-archive';
 var USER_FX_ARCHIVE_SCHEMA = 1;
-function defaultUserFxArchiveName(index) {
-  return '存档 ' + (index + 1);
-}
-function normalizeUserFxArchiveName(name, index) {
-  name = String(name || '').replace(/\s+/g, ' ').trim();
-  if (!name) name = defaultUserFxArchiveName(index);
-  return name.slice(0, 18);
-}
 function archiveNumber(raw, key, fallback, min, max) {
   var value = raw && raw[key] != null ? Number(raw[key]) : fallback;
   if (!isFinite(value)) value = fallback;
@@ -22833,78 +22795,6 @@ if (!hadStoredUserFxArchives) {
   userFxArchives = [createPackagedDefaultUserFxArchiveSlot()];
   saveUserFxArchives();
 }
-var userFxArchiveEditing = -1;
-function renderUserFxArchives() {
-  var grid = document.getElementById('user-archive-grid');
-  if (!grid) return;
-  grid.innerHTML = userFxArchives.map(function(slot, index){
-    var hasSave = !!slot.snapshot;
-    var editing = userFxArchiveEditing === index;
-    var nameHtml = editing
-      ? '<input class="user-archive-input" id="user-archive-input-' + index + '" type="text" maxlength="18" value="' + escHtml(slot.name) + '" onkeydown="handleUserFxArchiveRenameKey(event,' + index + ')">'
-      : '<div class="user-archive-name" title="' + escHtml(slot.name) + '">' + escHtml(slot.name) + '</div>';
-    var actionsHtml = editing
-      ? '<button type="button" onclick="commitUserFxArchiveRename(' + index + ')">确定</button>' +
-        '<button type="button" onclick="cancelUserFxArchiveRename()">取消</button>'
-      : '<button type="button" onclick="applyUserFxArchive(' + index + ')"' + (hasSave ? '' : ' disabled') + '>应用</button>' +
-        '<button type="button" onclick="saveUserFxArchive(' + index + ')">保存</button>' +
-        '<button type="button" onclick="renameUserFxArchive(' + index + ')">命名</button>';
-    return '<div class="user-archive-slot' + (hasSave ? ' has-save' : '') + '" data-slot="' + index + '">' +
-      nameHtml +
-      '<div class="user-archive-meta">' + formatUserArchiveTime(slot.savedAt) + '</div>' +
-      '<div class="user-archive-actions">' +
-        actionsHtml +
-      '</div>' +
-    '</div>';
-  }).join('');
-  if (userFxArchiveEditing >= 0) {
-    setTimeout(function(){
-      var input = document.getElementById('user-archive-input-' + userFxArchiveEditing);
-      if (input) {
-        input.focus();
-        input.select();
-      }
-    }, 0);
-  }
-}
-function saveUserFxArchive(index) {
-  index = clampRange(Number(index) || 0, 0, Math.max(0, userFxArchives.length - 1));
-  userFxArchives[index].snapshot = captureFxArchiveSnapshot();
-  userFxArchives[index].savedAt = Date.now();
-  userFxArchives[index].name = normalizeUserFxArchiveName(userFxArchives[index].name, index);
-  saveUserFxArchives();
-  renderUserFxArchives();
-  showToast('已保存到 ' + userFxArchives[index].name);
-}
-function applyUserFxArchive(index) {
-  index = clampRange(Number(index) || 0, 0, Math.max(0, userFxArchives.length - 1));
-  var slot = userFxArchives[index];
-  if (!slot || !slot.snapshot) {
-    showToast('这个用户存档还是空的');
-    return;
-  }
-  if (applyFxArchiveSnapshot(slot.snapshot)) {
-    showToast('已应用 ' + slot.name);
-  }
-}
-function renameUserFxArchive(index) {
-  index = clampRange(Number(index) || 0, 0, Math.max(0, userFxArchives.length - 1));
-  userFxArchiveEditing = index;
-  renderUserFxArchives();
-}
-function commitUserFxArchiveRename(index) {
-  index = clampRange(Number(index) || 0, 0, Math.max(0, userFxArchives.length - 1));
-  var input = document.getElementById('user-archive-input-' + index);
-  userFxArchives[index].name = normalizeUserFxArchiveName(input && input.value, index);
-  userFxArchiveEditing = -1;
-  saveUserFxArchives();
-  renderUserFxArchives();
-  showToast('已命名为 ' + userFxArchives[index].name);
-}
-function cancelUserFxArchiveRename() {
-  userFxArchiveEditing = -1;
-  renderUserFxArchives();
-}
 function handleUserFxArchiveRenameKey(e, index) {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -22918,6 +22808,7 @@ function handleUserFxArchiveRenameKey(e, index) {
 function defaultUserFxArchiveName(index) {
   return '用户存档 ' + (Number(index) + 1);
 }
+var userFxArchiveEditing = -1;
 function normalizeUserFxArchiveName(name, index) {
   name = String(name || '').replace(/\s+/g, ' ').trim();
   if (!name) name = defaultUserFxArchiveName(index);
@@ -24107,7 +23998,7 @@ function fxPanelTargetForNode(node, current) {
   if (id === 'fx-lyric-fold') return 'lyrics';
   if (id === 'fx-overlay-fold' || id === 'fx-stage-fold') return 'motion';
   if (id === 'fx-advanced' || node.classList.contains('fx-actions')) return 'advanced';
-  if (id === 'ui-theme-control' || id === 'ui-accent-palette') return 'appearance';
+  if (id === 'ui-accent-palette') return 'appearance';
   if (node.classList.contains('lyric-color-row') || node.classList.contains('cover-color-pop') || node.classList.contains('color-lab-pop') || node.classList.contains('cover-color-loupe')) return 'appearance';
   if (inputId === 'fx-bgopacity' || inputId === 'fx-glassaberration') return 'appearance';
   if (inputId === 'fx-lyricglow') return 'lyrics';
@@ -29091,7 +28982,6 @@ function toggleFullscreen() {
 // ============================================================
 applyDiyMode(diyPlayerMode, { save: false });
 bindFxPanel();
-applyUiTheme(readUiThemePreference(), true);
 applySavedLyricPaletteState();
 bindQualityControl();
 bindVolumeControls();
